@@ -1,26 +1,24 @@
 name: CI
+
+# Manual trigger only.
+#
+# This fork deliberately has NO automatic trigger (no push, no pull_request, no
+# schedule): every run consumes the account's Actions minutes. Start a build from
+# the Actions tab ("Run workflow") when you actually want one.
 on:
-  # pull_request:
-  #   paths-ignore:
-  #     - '**.md'
-  #     - 'docs/**'
-  #     - 'test.configs/**'
-  #     - '.vscode/'
-  #     - 'appcast.xml'
-  push:
-    branches:
-       - main
-       - dev
-       - android-fix-action-bug
-       - new-design-v2 
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.vscode/'
-      - 'appcast.xml'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Release channel"
+        type: choice
+        required: true
+        default: "dev"
+        options:
+          - dev
+          - prod
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,7 +26,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     secrets: inherit
     permissions: write-all
-    if: "${{!contains(github.event.head_commit.message, 'release: version')}}"
     with:
-      upload-artifact: ${{ github.event_name == 'push' }}
-      
+      upload-artifact: true
+      tag-name: "${{ github.ref_name }}"
+      channel: "${{ inputs.channel }}"

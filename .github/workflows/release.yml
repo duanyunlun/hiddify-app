@@ -1,9 +1,25 @@
 name: Release
+
+# Manual trigger only.
+#
+# This fork deliberately has NO tag/push trigger, so publishing a tag does not
+# start a build. Run it from the Actions tab when you want release artefacts.
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+.*'
+  workflow_dispatch:
+    inputs:
+      tag-name:
+        description: "Release tag to build and publish (e.g. v4.1.0-f1)"
+        type: string
+        required: true
+        default: "draft"
+      channel:
+        description: "Release channel"
+        type: choice
+        required: true
+        default: "prod"
+        options:
+          - prod
+          - dev
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,5 +32,5 @@ jobs:
     permissions: write-all
     with:
       upload-artifact: true
-      tag-name: "${{ github.ref_name }}"
-      channel: "${{ github.ref_type == 'tag' && endsWith(github.ref_name, 'dev') && 'dev' || github.ref_type != 'tag' && 'dev' || 'prod' }}"
+      tag-name: "${{ inputs.tag-name }}"
+      channel: "${{ inputs.channel }}"
