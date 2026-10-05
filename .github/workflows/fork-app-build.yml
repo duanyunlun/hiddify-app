@@ -33,6 +33,11 @@ on:
         options:
           - prod
           - dev
+      release_tag:
+        description: "Tag to publish the packages to (a release is created if needed)"
+        type: string
+        required: true
+        default: "v4.1.0-f1-app"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -129,9 +134,24 @@ jobs:
           path: out/*
           retention-days: 7
 
+      # Also publish to the release so the package has a stable download URL.
+      # Downloading an Actions artifact needs an authenticated API call and
+      # redirect handling, which is awkward to automate; a release asset is a
+      # plain HTTPS download.
+      - name: Publish to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: out/*
+          fail_on_unmatched_files: false
+
   windows-zip:
     name: Windows portable
-    runs-on: windows-latest
+    # Pin the 2022 image on purpose. On windows-latest the toolchain is Visual
+    # Studio 18 (v180) and the sentry-native CMake step that sentry_flutter pulls
+    # in fails there with MSB3073; the build succeeds with the Visual Studio 2022
+    # toolchain (v143), which this image provides.
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
 
@@ -184,3 +204,10 @@ jobs:
           name: Hiddify-Windows-Portable
           path: out/*.zip
           retention-days: 7
+
+      - name: Publish to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: out/*.zip
+          fail_on_unmatched_files: false
