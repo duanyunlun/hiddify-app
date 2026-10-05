@@ -49,10 +49,18 @@ CORE_PRODUCT_NAME=hiddify-core
 CORE_NAME=hiddify-lib
 LIB_NAME=hiddify-core
 
+# Where the prebuilt core comes from. Defaults to upstream; override to consume
+# this fork's own core builds, for example:
+#   make CORE_REPO=duanyunlun/hiddify-core CORE_TAG=v4.1.0-f1 windows-amd64-libs
+# The tag is used verbatim, so a fork tag such as v4.1.0-f1 works as well as a
+# plain version such as v4.1.0.
+CORE_REPO ?= hiddify/hiddify-core
+CORE_TAG ?= v$(core.version)
+
 ifeq ($(CHANNEL),prod)
-	CORE_URL=https://github.com/hiddify/hiddify-core/releases/download/v$(core.version)
+	CORE_URL=https://github.com/$(CORE_REPO)/releases/download/$(CORE_TAG)
 else
-	CORE_URL=https://github.com/hiddify/hiddify-core/releases/download/draft
+	CORE_URL=https://github.com/$(CORE_REPO)/releases/download/draft
 endif
 
 ifeq ($(CHANNEL),prod)
