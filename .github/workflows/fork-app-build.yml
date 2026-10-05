@@ -68,20 +68,31 @@ jobs:
 
       # Do not use android-actions/setup-android: it tries to install the
       # long-removed "tools" package and fails with "Failed to find package
-      # 'tools'". The runner image already ships the SDK; install exactly the
-      # platform and build-tools this project declares
+      # 'tools'". The runner image already ships the SDK, so only make sure the
+      # platform and build-tools this project declares are present
       # (android/app/build.gradle: compileSdkVersion 36, targetSdkVersion 36).
       - name: Setup Android SDK
+        # Non-fatal: the runner image already ships an SDK, so a failure here
+        # must not stop the build. Gradle reports a genuinely missing component.
+        continue-on-error: true
         run: |
-          set -e
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "SDK=$SDK"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
-          SDKMGR="$(find "$SDK/cmdline-tools" -maxdepth 2 -name sdkmanager -type f | sort | tail -n1)"
-          echo "using $SDKMGR"
-          yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
-          "$SDKMGR" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
-          ls "$SDK/platforms" "$SDK/build-tools"
+          SDKMGR="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMGR" ]; then
+            SDKMGR="$(find "$SDK/cmdline-tools" -name sdkmanager -type f 2>/dev/null | sort | tail -n 1 || true)"
+          fi
+          if [ -z "$SDKMGR" ] || [ ! -x "$SDKMGR" ]; then
+            echo "sdkmanager not found under $SDK; relying on what the image provides"
+          else
+            echo "using $SDKMGR"
+            yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+            "$SDKMGR" "platform-tools" "platforms;android-36" "build-tools;36.0.0" || true
+          fi
+          echo "--- platforms ---"; ls "$SDK/platforms" || true
+          echo "--- build-tools ---"; ls "$SDK/build-tools" || true
 
       # No Android NDK: the app consumes the core as a prebuilt AAR, and no
       # plugin compiles native code, so Gradle does not need an NDK.
