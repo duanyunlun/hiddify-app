@@ -174,6 +174,11 @@ class SettingsPage extends HookConsumerWidget {
             icon: Icons.content_cut_rounded,
             namedLocation: context.namedLocation('tlsTricks'),
           ),
+          SettingsSection(
+            title: t.pages.settings.coreUpdate.title,
+            icon: Icons.memory_rounded,
+            namedLocation: context.namedLocation('coreUpdate'),
+          ),
           if (PlatformUtils.isIOS)
             Material(
               child: ListTile(

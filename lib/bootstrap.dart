@@ -20,6 +20,8 @@ import 'package:hiddify/features/chain/model/chain_enum.dart';
 import 'package:hiddify/features/chain/notifier/chain_profile_notifier.dart';
 
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/core_update/data/kernel_release_repository.dart';
+import 'package:hiddify/features/core_update/notifier/kernel_update_notifier.dart';
 import 'package:hiddify/features/log/data/log_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
@@ -66,6 +68,13 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
     }
   });
 
+  // Apply a core that was staged from the "Core version" screen. This must run
+  // before the native library is loaded: on Windows a loaded library cannot be
+  // overwritten, which is exactly why replacing the core requires a restart.
+  await _safeInit("pending core update", () async {
+    await applyPendingKernelIfAny();
+  });
+
   final debug = container.read(debugModeNotifierProvider) || kDebugMode;
 
   if (PlatformUtils.isDesktop) {
@@ -99,6 +108,12 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
     () => container.read(chainProfileNotifierProvider(ChainType.unblocker).future),
   );
   await _safeInit("hiddify-core", () => container.read(hiddifyCoreServiceProvider).init());
+
+  // The staged core has been applied (see above) and the core is running, so the
+  // installed version can be recorded.
+  await _safeInit("mark core update applied", () async {
+    await container.read(kernelUpdateProvider.notifier).markPendingAsCurrent();
+  });
 
   // Eagerly listen to activeProxyNotifierProvider to force synchronous evaluation in microtasks,
   // avoiding lazy build-phase flushes and sibling dependency collisions on the Home page.

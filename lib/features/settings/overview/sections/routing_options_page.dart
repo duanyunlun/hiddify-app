@@ -121,6 +121,11 @@ class RoutingOptionsPage extends HookConsumerWidget {
                       onTap: () => context.goNamed('rule', pathParameters: {'orderId': 'new'}),
                     ),
                     _FabMenuItem(
+                      icon: Icons.rule_folder_rounded,
+                      label: t.pages.settings.routing.ruleSets.title,
+                      onTap: () => context.goNamed('ruleSets'),
+                    ),
+                    _FabMenuItem(
                       icon: Icons.view_list_rounded,
                       label: t.pages.settings.routing.predefinedRules.title,
                       onTap: ref.read(bottomSheetsNotifierProvider.notifier).showPredefinedRules,

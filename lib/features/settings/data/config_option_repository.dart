@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartx/dartx.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/optional_range.dart';
@@ -8,6 +10,7 @@ import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/features/log/model/log_level.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/route_rules/notifier/rules_notifier.dart';
+import 'package:hiddify/features/rule_sets/notifier/rule_sets_notifier.dart';
 import 'package:hiddify/features/settings/model/config_option_failure.dart';
 import 'package:hiddify/hiddifycore/generated/v2/config/route_rule.pb.dart';
 import 'package:hiddify/singbox/model/singbox_config_enum.dart';
@@ -545,6 +548,12 @@ abstract class ConfigOptions {
         profile: SingboxUnblockerProfileOption(id: ref.watch(unblockerProfileId)),
       ),
       routeRule: RouteRule(rules: ref.watch(rulesNotifierProvider)).toProto3Json()! as Map<String, dynamic>,
+      // Enabled rule sets are sent to the core, which turns each of them into a
+      // route.rule_set entry so that routing rules can reference the tag. Encoded
+      // as a JSON array string because that is what this model serializes.
+      ruleSets: jsonEncode(
+        ref.watch(ruleSetsProvider).enabledRuleSets.map((entry) => entry.toCoreJson()).toList(growable: false),
+      ),
     );
   });
 }

@@ -318,6 +318,68 @@
             "clearListMsg": "所有项目已删除"
           }
         },
+        "ruleSets": {
+          "title": "规则集",
+          "enabledCount": "${count} 个规则集已启用并下发给内核。",
+          "noneEnabled": "未启用任何规则集。引用规则集的路由规则将不会生效。",
+          "clear": "清空",
+          "addByUrl": "按 URL 添加规则集",
+          "browse": "浏览规则集",
+          "empty": {
+            "title": "还没有规则集",
+            "message": "添加规则集（例如中国 (cn) 域名列表），让国内流量直连、其余流量走代理。"
+          },
+          "dialog": {
+            "clearTitle": "移除全部规则集？",
+            "clearMessage": "在重新添加之前，引用它们的路由规则将不再生效。",
+            "cancel": "取消",
+            "remove": "移除"
+          },
+          "tile": {
+            "localFile": "本地文件",
+            "updateEvery": "每 ${interval} 更新",
+            "edit": "编辑",
+            "delete": "删除"
+          },
+          "editor": {
+            "addTitle": "添加规则集",
+            "editTitle": "编辑规则集",
+            "typeRemote": "远程",
+            "typeLocal": "本地",
+            "tag": "标签",
+            "tagHelper": "供路由规则引用，例如 my-cn",
+            "url": "URL",
+            "urlHelper": "规则集（.srs / .json）的下载地址",
+            "path": "路径",
+            "pathHelper": "本地规则集文件的绝对路径",
+            "format": "格式",
+            "formatBinary": "binary (.srs)",
+            "formatSource": "source (.json)",
+            "updateInterval": "更新间隔",
+            "updateIntervalHelper": "Go 时长（例如 120h）或秒数。由 sing-box 自行刷新。",
+            "add": "添加",
+            "save": "保存",
+            "tagRequired": "标签不能为空",
+            "urlRequired": "远程规则集必须填写 URL",
+            "pathRequired": "本地规则集必须填写路径",
+            "duplicate": "标签 “${tag}” 的规则集已存在"
+          },
+          "catalog": {
+            "title": "规则集目录",
+            "urlLabel": "目录 URL",
+            "urlHelper": "包含 {geosite, geoip, list[]} 的 JSON —— 可改成其他来源",
+            "useThisUrl": "使用此 URL",
+            "reload": "重新加载",
+            "searchHint": "按名称搜索",
+            "all": "全部",
+            "loading": "加载中…",
+            "empty": "尚未加载目录。请点击刷新，或设置其他目录 URL。",
+            "loadFailed": "无法加载目录：\n${error}",
+            "added": "已添加 ${tag}",
+            "addFailed": "无法添加 ${tag}",
+            "rulesCount": "${count} 条规则"
+          }
+        },
         "generalOptions": {
           "title": "路由通用选项",
           "region": "地区",
@@ -464,6 +526,30 @@
           "enable": "启用填充",
           "size": "填充大小"
         }
+      },
+      "coreUpdate": {
+        "title": "内核版本",
+        "current": "当前已安装内核：${tag}",
+        "currentNote": "内核只上报构建版本号（commit），不上报语义版本，所以这里显示的是从本页安装过的版本。在重启软件之前，运行中的内核可能仍是旧版本。",
+        "unknown": "内置（未知）",
+        "repository": "来源仓库",
+        "repositoryHelper": "owner/repo，例如 duanyunlun/hiddify-core",
+        "apply": "使用此仓库",
+        "includePreReleases": "包含预发布版本",
+        "reload": "重新加载",
+        "empty": "在该仓库中未找到适配本平台的内核。请检查仓库名，或勾选包含预发布版本。",
+        "install": "安装",
+        "installStaged": "内核 ${tag} 已下载。重启软件后生效。",
+        "installFailed": "安装失败",
+        "pending": "已就绪",
+        "pendingRestart": "内核 ${tag} 已就绪，将在下次启动时替换。",
+        "restartNow": "重启",
+        "restartHint": "关闭并重新打开 Hiddify 即可应用已就绪的内核。旧内核会以 .bak 后缀保留在旁边，改回名字即可回滚。",
+        "discard": "丢弃",
+        "notSupported": "本平台不支持在运行期替换内核。Android 的内核是编译进应用的。",
+        "confirmTitle": "安装内核 ${tag}？",
+        "confirmMessage": "下载内容会按发布方公布的校验和进行校验。它会在下次启动软件时生效，当前内核会保留为备份。",
+        "cancel": "取消"
       },
       "chain": {
         "title": "链",

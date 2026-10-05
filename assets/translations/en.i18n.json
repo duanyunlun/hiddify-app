@@ -1,4 +1,4 @@
-﻿{
+{
   "common": {
     "appTitle": "Hiddify",
     "start": "Start",
@@ -318,6 +318,68 @@
             "clearListMsg": "All items are deleted"
           }
         },
+        "ruleSets": {
+          "title": "Rule sets",
+          "enabledCount": "${count} rule set(s) enabled and sent to the core.",
+          "noneEnabled": "No rule set enabled. Routing rules that reference a rule set will not work.",
+          "clear": "Clear",
+          "addByUrl": "Add rule set by URL",
+          "browse": "Browse rule sets",
+          "empty": {
+            "title": "No rule set yet",
+            "message": "Add a rule set such as a China (cn) domain list so that domestic traffic goes direct while everything else uses the proxy."
+          },
+          "dialog": {
+            "clearTitle": "Remove all rule sets?",
+            "clearMessage": "Routing rules that reference them will stop working until they are added again.",
+            "cancel": "Cancel",
+            "remove": "Remove"
+          },
+          "tile": {
+            "localFile": "local file",
+            "updateEvery": "update every ${interval}",
+            "edit": "Edit",
+            "delete": "Delete"
+          },
+          "editor": {
+            "addTitle": "Add rule set",
+            "editTitle": "Edit rule set",
+            "typeRemote": "Remote",
+            "typeLocal": "Local",
+            "tag": "Tag",
+            "tagHelper": "Referenced by routing rules, e.g. my-cn",
+            "url": "URL",
+            "urlHelper": "Download URL of the .srs / .json rule set",
+            "path": "Path",
+            "pathHelper": "Absolute path to a local rule set file",
+            "format": "Format",
+            "formatBinary": "binary (.srs)",
+            "formatSource": "source (.json)",
+            "updateInterval": "Update interval",
+            "updateIntervalHelper": "Go duration (e.g. 120h) or seconds. sing-box refreshes it itself.",
+            "add": "Add",
+            "save": "Save",
+            "tagRequired": "Tag is required",
+            "urlRequired": "URL is required for a remote rule set",
+            "pathRequired": "Path is required for a local rule set",
+            "duplicate": "A rule set with tag \"${tag}\" already exists"
+          },
+          "catalog": {
+            "title": "Rule set catalog",
+            "urlLabel": "Catalog URL",
+            "urlHelper": "JSON with {geosite, geoip, list[]} - change it to use another source",
+            "useThisUrl": "Use this URL",
+            "reload": "Reload",
+            "searchHint": "Search by name",
+            "all": "all",
+            "loading": "Loading...",
+            "empty": "No catalog loaded yet. Press reload, or set a different catalog URL.",
+            "loadFailed": "Could not load the catalog:\n${error}",
+            "added": "Added ${tag}",
+            "addFailed": "Could not add ${tag}",
+            "rulesCount": "${count} rules"
+          }
+        },
         "generalOptions": {
           "title": "Route general options",
           "region": "Region",
@@ -464,6 +526,30 @@
           "enable": "Enable padding",
           "size": "Padding size"
         }
+      },
+      "coreUpdate": {
+        "title": "Core version",
+        "current": "Installed core: ${tag}",
+        "currentNote": "The core reports its build revision, not a version number, so the version shown here is the one installed from this screen. The running core may differ until the app is restarted.",
+        "unknown": "built-in (unknown)",
+        "repository": "Source repository",
+        "repositoryHelper": "owner/repo, e.g. duanyunlun/hiddify-core",
+        "apply": "Use this repository",
+        "includePreReleases": "Include pre-releases",
+        "reload": "Reload",
+        "empty": "No core build found for this platform in that repository. Check the repository name, or try including pre-releases.",
+        "install": "Install",
+        "installStaged": "Core ${tag} downloaded. Restart the app to apply it.",
+        "installFailed": "Install failed",
+        "pending": "staged",
+        "pendingRestart": "Core ${tag} is staged and will be applied on the next start.",
+        "restartNow": "Restart",
+        "restartHint": "Close and reopen Hiddify to apply the staged core. The previous core is kept next to it with a .bak suffix and can be restored by renaming it.",
+        "discard": "Discard",
+        "notSupported": "Replacing the core at runtime is not supported on this platform. On Android the core is compiled into the application.",
+        "confirmTitle": "Install core ${tag}?",
+        "confirmMessage": "The download is verified against the checksum published by the release. It is applied the next time the app starts; the current core is kept as a backup.",
+        "cancel": "Cancel"
       },
       "chain": {
         "title": "Chain",

@@ -19,7 +19,9 @@ import 'package:hiddify/features/profile/overview/profiles_page.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_page.dart';
 import 'package:hiddify/features/route_rules/notifier/rule_notifier.dart';
 import 'package:hiddify/features/route_rules/overview/generic_list_page.dart';
+import 'package:hiddify/features/core_update/overview/core_update_page.dart';
 import 'package:hiddify/features/route_rules/overview/rule_page.dart';
+import 'package:hiddify/features/rule_sets/overview/rule_sets_page.dart';
 import 'package:hiddify/features/settings/overview/sections/chain_options_page.dart';
 import 'package:hiddify/features/settings/overview/sections/dns_options_page.dart';
 import 'package:hiddify/features/settings/overview/sections/general_page.dart';
@@ -189,6 +191,12 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                           customTransition(TransitionType.slide, state.pageKey, const GeneralPage()),
                     ),
                     GoRoute(
+                      name: 'coreUpdate',
+                      path: 'core-update',
+                      pageBuilder: (_, state) =>
+                          customTransition(TransitionType.slide, state.pageKey, const CoreUpdatePage()),
+                    ),
+                    GoRoute(
                       name: 'routingOptions',
                       path: 'routing-options',
                       pageBuilder: (_, state) => customTransition(
@@ -197,6 +205,15 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                         RoutingOptionsPage(routeRule: state.uri.queryParameters['routeRule']),
                       ),
                       routes: <GoRoute>[
+                        GoRoute(
+                          name: 'ruleSets',
+                          path: 'rule-sets',
+                          pageBuilder: (_, state) => customTransition(
+                            TransitionType.slide,
+                            state.pageKey,
+                            const RuleSetsPage(),
+                          ),
+                        ),
                         GoRoute(
                           name: 'rule',
                           path: 'rule/:orderId',

@@ -52,6 +52,13 @@ class SingboxConfigOption with _$SingboxConfigOption {
     // required bool enableDnsRouting,
     required bool independentDnsCache,
     required Map<String, dynamic> routeRule,
+    /// Rule set definitions, sent to the core as the top level `rule-set` key.
+    /// A JSON array string such as
+    /// `[{"tag":"my-cn","type":"remote","format":"binary","url":"…"}]`;
+    /// the core turns each entry into a `route.rule_set` entry. Kept as a string
+    /// because this model is serialized by json_serializable, and the string is
+    /// forwarded verbatim into the settings JSON where the core decodes it.
+    @Default('[]') String ruleSets,
     // required SingboxMuxOption mux,
     required SingboxTlsTricks tlsTricks,
     required ChainStatus chainStatus,

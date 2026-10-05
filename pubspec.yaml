@@ -57,6 +57,10 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.28
 
   path: ^1.9.0
+  # Used by the "Core version" screen to unpack a downloaded core and to verify
+  # its sha256 before replacing the running library.
+  archive: ^4.0.4
+  crypto: ^3.0.6
   loggy: ^2.0.3
   meta: ^1.15.0
   dartx: ^1.2.0
