@@ -1,0 +1,164 @@
+name: Build fork packages
+
+# Manual trigger only: this fork must never build on a push or on a tag, because
+# every run consumes the account's Actions minutes.
+#
+# Builds only what this fork needs and is meant for personal use:
+#   - Android APK
+#   - Windows portable zip
+# macOS and iOS are intentionally not built. The steps avoid `make` and call the
+# underlying commands directly, so the workflow does not depend on a make binary
+# being present on the runner.
+#
+# The core binaries come from a fork release (CORE_REPO/CORE_TAG), so the
+# packages carry this fork's core changes instead of upstream's.
+on:
+  workflow_dispatch:
+    inputs:
+      core_repo:
+        description: "Repository that hosts the core release"
+        type: string
+        required: true
+        default: "duanyunlun/hiddify-core"
+      core_tag:
+        description: "Core release tag (e.g. v4.1.0-f1)"
+        type: string
+        required: true
+        default: "v4.1.0-f1"
+      channel:
+        description: "Release channel"
+        type: choice
+        required: true
+        default: "prod"
+        options:
+          - prod
+          - dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: "3.38.5"
+  ANDROID_NDK_VERSION: r28c
+  CORE_REPO: "${{ inputs.core_repo }}"
+  CORE_TAG: "${{ inputs.core_tag }}"
+  TARGET: "lib/main_prod.dart"
+
+jobs:
+  android-apk:
+    name: Android APK
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ env.ANDROID_NDK_VERSION }}
+
+      - name: Fetch core binaries
+        run: |
+          set -e
+          mkdir -p hiddify-core/bin android/app/libs
+          curl -fL --retry 5 --retry-all-errors \
+            -o core-android.tar.gz \
+            "https://github.com/${CORE_REPO}/releases/download/${CORE_TAG}/hiddify-lib-android.tar.gz"
+          tar -xzf core-android.tar.gz -C android/app/libs
+          ls -lh android/app/libs
+
+      - name: Flutter deps and code generation
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          dart run slang
+
+      - name: Build APK
+        run: flutter build apk --release --target ${{ env.TARGET }}
+
+      - name: Collect package
+        run: |
+          set -e
+          mkdir -p out
+          find build/app/outputs -type f -name "*.apk" -exec cp -v {} out/ \;
+          ls -lh out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hiddify-Android-apk
+          path: out/*
+          retention-days: 7
+
+  windows-zip:
+    name: Windows portable
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Fetch core binaries
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path hiddify-core/bin | Out-Null
+          $url = "https://github.com/$env:CORE_REPO/releases/download/$env:CORE_TAG/hiddify-lib-windows-amd64.tar.gz"
+          Invoke-WebRequest -Uri $url -OutFile core-win.tar.gz
+          tar -xzf core-win.tar.gz -C hiddify-core/bin
+          Get-ChildItem hiddify-core/bin
+
+      # ffigen needs hiddify-core/bin/desktop.h. The fork's core release ships the
+      # cgo-generated header alongside the library precisely so this build does
+      # not need a C toolchain (generating it here would require mingw-w64 on the
+      # runner and `make headers` is unusable: it points at platform/desktop2,
+      # which does not exist).
+      - name: Provide core header for ffigen
+        shell: pwsh
+        run: |
+          if (-not (Test-Path hiddify-core/bin/desktop.h)) {
+            throw "hiddify-core/bin/desktop.h is missing from the core release ${env:CORE_TAG}; rebuild the core release with fork-build.yml"
+          }
+          Get-Content hiddify-core/bin/desktop.h -TotalCount 3
+
+      - name: Flutter deps and code generation
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          dart run slang
+
+      - name: Build portable package
+        shell: pwsh
+        run: |
+          flutter build windows --release --target ${{ env.TARGET }} --dart-define=portable=true
+          $stage = "out/Hiddify"
+          New-Item -ItemType Directory -Force -Path $stage, "$stage/hiddify_portable_data" | Out-Null
+          Copy-Item "build/windows/x64/runner/Release/*" $stage -Recurse -Force
+          Compress-Archive -Path $stage -DestinationPath "out/Hiddify-Windows-portable.zip" -CompressionLevel Optimal
+          Get-ChildItem out | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hiddify-Windows-Portable
+          path: out/*.zip
+          retention-days: 7
