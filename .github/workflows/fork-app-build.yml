@@ -43,7 +43,6 @@ permissions:
 
 env:
   FLUTTER_VERSION: "3.38.5"
-  ANDROID_NDK_VERSION: r28c
   CORE_REPO: "${{ inputs.core_repo }}"
   CORE_TAG: "${{ inputs.core_tag }}"
   TARGET: "lib/main_prod.dart"
@@ -67,13 +66,25 @@ jobs:
           distribution: "zulu"
           java-version: "17"
 
+      # Do not use android-actions/setup-android: it tries to install the
+      # long-removed "tools" package and fails with "Failed to find package
+      # 'tools'". The runner image already ships the SDK; install exactly the
+      # platform and build-tools this project declares
+      # (android/app/build.gradle: compileSdkVersion 36, targetSdkVersion 36).
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          set -e
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          SDKMGR="$(find "$SDK/cmdline-tools" -maxdepth 2 -name sdkmanager -type f | sort | tail -n1)"
+          echo "using $SDKMGR"
+          yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+          "$SDKMGR" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          ls "$SDK/platforms" "$SDK/build-tools"
 
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: ${{ env.ANDROID_NDK_VERSION }}
+      # No Android NDK: the app consumes the core as a prebuilt AAR, and no
+      # plugin compiles native code, so Gradle does not need an NDK.
 
       - name: Fetch core binaries
         run: |
