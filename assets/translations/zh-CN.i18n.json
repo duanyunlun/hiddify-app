@@ -339,7 +339,10 @@
             "localFile": "本地文件",
             "updateEvery": "每 ${interval} 更新",
             "edit": "编辑",
-            "delete": "删除"
+            "delete": "删除",
+            "notReferenced": "还没有路由规则引用它，因此不会生效",
+            "createRule": "创建规则",
+            "usedBy": "路由规则 · ${outbound}"
           },
           "editor": {
             "addTitle": "添加规则集",
@@ -381,9 +384,9 @@
           },
           "routeRuleOffer": {
             "title": "为 ${tag} 创建一条路由规则？",
-            "message": "规则集只定义了一份列表；必须有规则引用它才会影响流量。可以现在创建，也可以稍后在「路由」页自行添加。",
+            "message": "规则集已经添加好了。不过规则集只定义了一份列表：必须有路由规则引用它才会影响流量，所以现在它还不会生效。可以现在创建这条规则，也可以稍后在「路由」页自行添加。",
             "outbound": "匹配的流量走",
-            "skip": "暂不创建",
+            "skip": "只添加规则集",
             "create": "创建规则",
             "created": "已为 ${tag} 创建规则"
           }

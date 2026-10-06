@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/features/route_rules/notifier/rules_notifier.dart';
 import 'package:hiddify/features/rule_sets/model/rule_set.dart';
 import 'package:hiddify/features/rule_sets/notifier/rule_sets_notifier.dart';
 import 'package:hiddify/features/rule_sets/overview/rule_set_catalog_sheet.dart';
 import 'package:hiddify/features/rule_sets/overview/rule_set_editor_sheet.dart';
+import 'package:hiddify/features/rule_sets/overview/rule_set_route_prompt.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Manages the rule sets that are part of the active configuration.
@@ -140,36 +143,92 @@ class _RuleSetTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final strings = ref.watch(translationsProvider).requireValue.pages.settings.routing.ruleSets;
-    return ListTile(
-      leading: Icon(
-        entry.type == RuleSetType.local ? Icons.folder_rounded : Icons.cloud_download_rounded,
-        color: entry.enabled ? theme.colorScheme.primary : theme.colorScheme.outline,
-      ),
-      title: Text(entry.tag, style: const TextStyle(fontFamily: 'monospace')),
-      subtitle: Text(
-        entry.type == RuleSetType.local
-            ? (entry.localPath ?? strings.tile.localFile)
-            : '${entry.url}\n${strings.tile.updateEvery(interval: entry.updateInterval)}',
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodySmall,
-      ),
-      isThreeLine: entry.type != RuleSetType.local,
-      onTap: onEdit,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Switch.adaptive(value: entry.enabled, onChanged: onToggle),
-          PopupMenuButton<void>(
-            icon: const Icon(Icons.more_vert_rounded),
-            itemBuilder: (_) => [
-              PopupMenuItem(onTap: onEdit, child: Text(strings.tile.edit)),
-              PopupMenuItem(onTap: onDelete, child: Text(strings.tile.delete)),
+    final t = ref.watch(translationsProvider).requireValue;
+    final strings = t.pages.settings.routing.ruleSets;
+    // A rule set does nothing on its own; it only takes effect through the
+    // routing rules that reference its tag. Show those rules here so the list
+    // answers "what does this rule set actually do, and where do I change it".
+    final referencingRules = ref
+        .watch(rulesNotifierProvider)
+        .where((rule) => rule.ruleSets.contains(entry.tag))
+        .toList(growable: false);
+    final outboundLabels = t.pages.settings.routing.routeRule.rule.outbound;
+
+    return Column(
+      // Required: this sits inside a ListView item, where the height constraint
+      // is unbounded.
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          leading: Icon(
+            entry.type == RuleSetType.local ? Icons.folder_rounded : Icons.cloud_download_rounded,
+            color: entry.enabled ? theme.colorScheme.primary : theme.colorScheme.outline,
+          ),
+          title: Text(entry.tag, style: const TextStyle(fontFamily: 'monospace')),
+          subtitle: Text(
+            entry.type == RuleSetType.local
+                ? (entry.localPath ?? strings.tile.localFile)
+                : '${entry.url}\n${strings.tile.updateEvery(interval: entry.updateInterval)}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall,
+          ),
+          isThreeLine: entry.type != RuleSetType.local,
+          onTap: onEdit,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Switch.adaptive(value: entry.enabled, onChanged: onToggle),
+              PopupMenuButton<void>(
+                icon: const Icon(Icons.more_vert_rounded),
+                itemBuilder: (_) => [
+                  PopupMenuItem(onTap: onEdit, child: Text(strings.tile.edit)),
+                  PopupMenuItem(onTap: onDelete, child: Text(strings.tile.delete)),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 72, right: 16, bottom: 8),
+          child: referencingRules.isEmpty
+              ? Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, size: 16, color: theme.colorScheme.error),
+                    const Gap(6),
+                    Expanded(
+                      child: Text(
+                        strings.tile.notReferenced,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => offerRouteRuleForRuleSet(context, ref, tag: entry.tag),
+                      child: Text(strings.tile.createRule),
+                    ),
+                  ],
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final rule in referencingRules)
+                      ActionChip(
+                        avatar: const Icon(Icons.rule_rounded, size: 16),
+                        label: Text(
+                          strings.tile.usedBy(
+                            outbound: outboundLabels[rule.outbound.name] ?? rule.outbound.name,
+                          ),
+                        ),
+                        onPressed: () =>
+                            context.goNamed('rule', pathParameters: {'orderId': rule.listOrder.toString()}),
+                      ),
+                  ],
+                ),
+        ),
+        const Divider(height: 1),
+      ],
     );
   }
 }

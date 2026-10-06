@@ -339,7 +339,10 @@
             "localFile": "local file",
             "updateEvery": "update every ${interval}",
             "edit": "Edit",
-            "delete": "Delete"
+            "delete": "Delete",
+            "notReferenced": "No routing rule references it yet, so it has no effect",
+            "createRule": "Create rule",
+            "usedBy": "routing rule · ${outbound}"
           },
           "editor": {
             "addTitle": "Add rule set",
@@ -381,9 +384,9 @@
           },
           "routeRuleOffer": {
             "title": "Create a routing rule for ${tag}?",
-            "message": "A rule set only defines a list; nothing is routed until a rule references it. Create the rule now, or add it later from the routing screen.",
+            "message": "The rule set has been added. A rule set only defines a list though: nothing is routed until a rule references it, so without a rule it has no effect. Create that rule now, or add it later from the routing screen.",
             "outbound": "Send matching traffic to",
-            "skip": "Skip",
+            "skip": "Add the rule set only",
             "create": "Create rule",
             "created": "Created a rule for ${tag}"
           }
