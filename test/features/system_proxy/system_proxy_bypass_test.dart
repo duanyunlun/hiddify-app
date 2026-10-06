@@ -52,19 +52,33 @@ void main() {
     });
   });
 
-  group('validateSystemProxyBypassEntry', () {
-    test('accepts ordinary patterns', () {
-      for (final entry in ['*.example.com', '10.0.0.0/8', 'example.org', '192.168.1.5']) {
-        expect(validateSystemProxyBypassEntry(entry), isNull, reason: entry);
-      }
+  group('parseUserEntryText', () {
+    test('splits on semicolons and trims', () {
+      expect(parseUserEntryText('*.a.com; 10.0.0.0/8 ;*.b.com'), ['*.a.com', '10.0.0.0/8', '*.b.com']);
     });
 
-    test('rejects what windows cannot store', () {
-      expect(validateSystemProxyBypassEntry(''), 'empty');
-      expect(validateSystemProxyBypassEntry('   '), 'empty');
-      // A semicolon is the separator, so it would silently become two entries.
-      expect(validateSystemProxyBypassEntry('a.com;b.com'), 'separator');
-      expect(validateSystemProxyBypassEntry('a b.com'), 'whitespace');
+    test('accepts the full width semicolon a chinese keyboard produces', () {
+      // Rejecting this would look like the app silently dropped the input.
+      expect(parseUserEntryText('*.a.com；*.b.com'), ['*.a.com', '*.b.com']);
+    });
+
+    test('drops blanks and duplicates', () {
+      expect(parseUserEntryText(';*.a.com;; *.A.com ;'), ['*.a.com']);
+    });
+
+    test('drops entries with whitespace, which windows cannot store', () {
+      expect(parseUserEntryText('*.a.com; two words ;*.b.com'), ['*.a.com', '*.b.com']);
+    });
+
+    test('tolerates null and empty input', () {
+      expect(parseUserEntryText(null), isEmpty);
+      expect(parseUserEntryText(''), isEmpty);
+      expect(parseUserEntryText('  ;  '), isEmpty);
+    });
+
+    test('round trips through formatUserEntryText', () {
+      const entries = ['*.a.com', '10.0.0.0/8'];
+      expect(parseUserEntryText(formatUserEntryText(entries)), entries);
     });
   });
 }

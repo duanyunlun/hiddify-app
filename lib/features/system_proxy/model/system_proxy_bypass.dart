@@ -76,12 +76,24 @@ List<String> composeSystemProxyOverride(Iterable<String> userEntries) {
 /// with the separator Windows expects.
 String systemProxyOverrideValue(Iterable<String> userEntries) => composeSystemProxyOverride(userEntries).join(';');
 
-/// Rejects entries Windows cannot use, and entries that would undo the point of
-/// the proxy.
-String? validateSystemProxyBypassEntry(String entry) {
-  final trimmed = entry.trim();
-  if (trimmed.isEmpty) return 'empty';
-  if (trimmed.contains(';')) return 'separator';
-  if (trimmed.contains(RegExp(r'\s'))) return 'whitespace';
-  return null;
+/// Parses the text the user typed into entries.
+///
+/// The list is edited as one semicolon separated string, which is how Windows
+/// itself stores it. Both the half-width `;` and the full-width `；` are
+/// accepted, because a Chinese keyboard produces the latter very easily and
+/// rejecting it would look like the app lost the input.
+List<String> parseUserEntryText(String? raw) {
+  if (raw == null) return const [];
+  final seen = <String>{};
+  final result = <String>[];
+  for (final part in raw.split(RegExp('[;；]'))) {
+    final entry = part.trim();
+    if (entry.isEmpty) continue;
+    if (entry.contains(RegExp(r'\s'))) continue;
+    if (seen.add(entry.toLowerCase())) result.add(entry);
+  }
+  return result;
 }
+
+/// The text to show in the editor for [entries].
+String formatUserEntryText(Iterable<String> entries) => entries.join('; ');

@@ -86,29 +86,8 @@ class SystemProxyBypassNotifier extends StateNotifier<SystemProxyBypassState> {
     state = state.copyWith(entries: entries, applied: _store.isSupported && _store.write(entries));
   }
 
-  /// Returns the reason the entry was rejected, or null when it was added.
-  String? add(String entry) {
-    final problem = validateSystemProxyBypassEntry(entry);
-    if (problem != null) return problem;
-    final trimmed = entry.trim();
-    if (state.entries.any((existing) => existing.toLowerCase() == trimmed.toLowerCase())) return 'duplicate';
-    _commit([...state.entries, trimmed]);
-    return null;
-  }
-
-  void remove(String entry) =>
-      _commit(state.entries.where((existing) => existing != entry).toList(growable: false));
-
-  String? update(String previous, String entry) {
-    final problem = validateSystemProxyBypassEntry(entry);
-    if (problem != null) return problem;
-    final trimmed = entry.trim();
-    if (state.entries.any((existing) => existing != previous && existing.toLowerCase() == trimmed.toLowerCase())) {
-      return 'duplicate';
-    }
-    _commit(state.entries.map((existing) => existing == previous ? trimmed : existing).toList(growable: false));
-    return null;
-  }
+  /// Replaces the whole list, as typed in the editor.
+  void setEntries(List<String> entries) => _commit(entries);
 
   /// Removes every extra entry, leaving the loopback and private ranges.
   void clear() => _commit(const []);
@@ -120,6 +99,10 @@ class SystemProxyBypassNotifier extends StateNotifier<SystemProxyBypassState> {
   List<String> get effectiveEntries => composeSystemProxyOverride(state.entries);
 }
 
+/// Overridable so a test can point the store at a scratch registry key instead
+/// of the machine's real internet settings.
+final systemProxyOverrideStoreProvider = Provider<SystemProxyOverrideStore>((ref) => SystemProxyOverrideStore());
+
 final systemProxyBypassProvider = StateNotifierProvider<SystemProxyBypassNotifier, SystemProxyBypassState>(
-  (ref) => SystemProxyBypassNotifier(ref),
+  (ref) => SystemProxyBypassNotifier(ref, ref.read(systemProxyOverrideStoreProvider)),
 );
