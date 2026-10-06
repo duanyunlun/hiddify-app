@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/features/rule_sets/model/rule_set.dart';
 import 'package:hiddify/features/rule_sets/notifier/rule_sets_notifier.dart';
+import 'package:hiddify/features/rule_sets/overview/rule_set_route_prompt.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Adds or edits a single rule set.
@@ -111,7 +112,7 @@ class RuleSetEditorSheet extends HookConsumerWidget {
             ],
             const Gap(24),
             FilledButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 final notifier = ref.read(ruleSetsProvider.notifier);
                 final tag = tagController.text.trim();
                 final url = urlController.text.trim();
@@ -141,11 +142,16 @@ class RuleSetEditorSheet extends HookConsumerWidget {
                 );
                 if (isEditing) {
                   notifier.replace(entry);
+                  if (context.mounted) Navigator.of(context).pop();
                 } else if (!notifier.add(entry)) {
                   _toast(context, s.duplicate(tag: tag));
                   return;
+                } else {
+                  // A rule set on its own routes nothing; offer the rule that
+                  // makes it take effect before closing the sheet.
+                  await offerRouteRuleForRuleSet(context, ref, tag: tag);
+                  if (context.mounted) Navigator.of(context).pop();
                 }
-                Navigator.of(context).pop();
               },
               icon: Icon(isEditing ? Icons.save_rounded : Icons.add_rounded),
               label: Text(isEditing ? s.save : s.add),

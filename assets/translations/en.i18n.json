@@ -378,6 +378,14 @@
             "added": "Added ${tag}",
             "addFailed": "Could not add ${tag}",
             "rulesCount": "${count} rules"
+          },
+          "routeRuleOffer": {
+            "title": "Create a routing rule for ${tag}?",
+            "message": "A rule set only defines a list; nothing is routed until a rule references it. Create the rule now, or add it later from the routing screen.",
+            "outbound": "Send matching traffic to",
+            "skip": "Skip",
+            "create": "Create rule",
+            "created": "Created a rule for ${tag}"
           }
         },
         "generalOptions": {

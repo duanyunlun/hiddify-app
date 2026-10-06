@@ -378,6 +378,14 @@
             "added": "已添加 ${tag}",
             "addFailed": "无法添加 ${tag}",
             "rulesCount": "${count} 条规则"
+          },
+          "routeRuleOffer": {
+            "title": "为 ${tag} 创建一条路由规则？",
+            "message": "规则集只定义了一份列表；必须有规则引用它才会影响流量。可以现在创建，也可以稍后在「路由」页自行添加。",
+            "outbound": "匹配的流量走",
+            "skip": "暂不创建",
+            "create": "创建规则",
+            "created": "已为 ${tag} 创建规则"
           }
         },
         "generalOptions": {

@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/features/rule_sets/notifier/rule_sets_notifier.dart';
+import 'package:hiddify/features/rule_sets/overview/rule_set_route_prompt.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// Browses a remote rule set catalog and adds entries to the configuration.
@@ -177,14 +178,21 @@ class RuleSetCatalogSheet extends HookConsumerWidget {
                             ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
                             : IconButton(
                                 icon: const Icon(Icons.add_circle_outline_rounded),
-                                onPressed: () {
+                                onPressed: () async {
                                   final ok = notifier.addFromCatalog(entry);
+                                  if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(ok ? c.added(tag: entry.tag) : c.addFailed(tag: entry.tag)),
                                       duration: const Duration(seconds: 1),
                                     ),
                                   );
+                                  // A rule set on its own routes nothing: only a
+                                  // rule that references its tag has an effect,
+                                  // so offer to create one right away.
+                                  if (ok) {
+                                    await offerRouteRuleForRuleSet(context, ref, tag: entry.tag);
+                                  }
                                 },
                               ),
                       );
