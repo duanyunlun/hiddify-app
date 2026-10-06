@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/model/environment.dart';
+import 'package:hiddify/core/preferences/portable_preferences_store.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:loggy/loggy.dart';
@@ -8,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 part 'preferences_provider.g.dart';
 
@@ -18,7 +21,16 @@ Future<SharedPreferences> sharedPreferences(Ref ref) async {
 
   logger.debug("initializing preferences");
   try {
-    if (PlatformUtils.isWindows && Environment.isPortable) SharedPreferences.setPrefix('portable.');
+    if (PlatformUtils.isWindows && Environment.isPortable) {
+      // Keep the settings inside the portable directory. The default store
+      // writes to %APPDATA%, which is shared by every portable copy on the
+      // machine, so a freshly unpacked package inherited the previous run's
+      // settings instead of starting clean.
+      SharedPreferencesStorePlatform.instance = PortablePreferencesStore(
+        File(p.join(AppDirectories.getPortableDirectory().path, 'shared_preferences.json')),
+      );
+      SharedPreferences.setPrefix('portable.');
+    }
     sharedPreferences = await SharedPreferences.getInstance();
   } catch (e) {
     logger.error("error initializing preferences", e);

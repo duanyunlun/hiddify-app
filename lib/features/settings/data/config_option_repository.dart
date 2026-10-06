@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:dartx/dartx.dart';
 import 'package:fpdart/fpdart.dart';
@@ -549,11 +548,9 @@ abstract class ConfigOptions {
       ),
       routeRule: RouteRule(rules: ref.watch(rulesNotifierProvider)).toProto3Json()! as Map<String, dynamic>,
       // Enabled rule sets are sent to the core, which turns each of them into a
-      // route.rule_set entry so that routing rules can reference the tag. Encoded
-      // as a JSON array string because that is what this model serializes.
-      ruleSets: jsonEncode(
-        ref.watch(ruleSetsProvider).enabledRuleSets.map((entry) => entry.toCoreJson()).toList(growable: false),
-      ),
+      // route.rule_set entry so that routing rules can reference the tag. This
+      // must be a real JSON array: the core decodes the key into a slice.
+      ruleSets: ref.watch(ruleSetsProvider).enabledRuleSets.map((entry) => entry.toCoreJson()).toList(growable: false),
     );
   });
 }
