@@ -395,6 +395,31 @@
         },
         "generalOptions": {
           "title": "路由通用选项",
+          "systemProxyBypass": {
+            "title": "系统代理绕过",
+            "subtitle": "额外绕过 ${count} 条",
+            "description": "这里的条目不交给本软件，而是由 Windows 直接连接。正常情况下应保持为空：分流由「路由」里的规则决定，Windows 层再拦一道只会互相打架——比如别的工具留下的 *.steampowered.com 会让浏览器绕过代理，规则怎么配都打不开。",
+            "notApplied": "当前系统不支持改写该设置，列表只会被保存。",
+            "localAlwaysKept": "始终保留（局域网）",
+            "yourEntries": "你的额外条目",
+            "clear": "全部清空",
+            "empty": "没有任何额外条目。Windows 会直接连接本机与局域网地址，其余流量都交给本软件按规则处理。",
+            "add": "添加条目",
+            "edit": "编辑",
+            "delete": "删除",
+            "save": "保存",
+            "cancel": "取消",
+            "reload": "从系统重新读取",
+            "pattern": "域名或 IP 段",
+            "patternHelper": "例如 *.example.com 或 10.0.0.0/8",
+            "invalid": "无法添加：${problem}",
+            "problems": {
+              "empty": "内容为空",
+              "separator": "不能包含分号",
+              "whitespace": "不能包含空格",
+              "duplicate": "该条目已存在"
+            }
+          },
           "region": "地区",
           "regions": {
             "ir": "伊朗 (ir)",

@@ -26,6 +26,7 @@ import 'package:hiddify/features/log/data/log_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
+import 'package:hiddify/features/system_proxy/notifier/system_proxy_bypass_notifier.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hiddify/hiddifycore/hiddify_core_service_provider.dart';
@@ -66,6 +67,13 @@ Future<void> lazyBootstrap(WidgetsBinding widgetsBinding, Environment env) async
       Logger.bootstrap.info("clearing preferences");
       await container.read(sharedPreferencesProvider).requireValue.clear();
     }
+  });
+
+  // Keep the Windows system proxy bypass list in step with the user's list even
+  // if that screen is never opened, so an entry left behind by another tool
+  // cannot quietly keep traffic away from the proxy.
+  await _safeInit("system proxy bypass", () async {
+    container.read(systemProxyBypassProvider);
   });
 
   // Apply a core that was staged from the "Core version" screen. This must run

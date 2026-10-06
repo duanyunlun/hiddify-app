@@ -37,6 +37,9 @@ dependencies:
   # Used to install a file-backed preferences store for the portable Windows
   # build, so its settings live in the portable directory instead of %APPDATA%.
   shared_preferences_platform_interface: ^2.4.1
+  # Writes the Windows system proxy bypass list, so an entry left behind by
+  # another tool cannot keep traffic away from the proxy unnoticed.
+  win32_registry: ^2.1.0
   # shared_preferences_android: ^2.4.8
   dio: ^5.4.1
   ffi: ^2.1.2

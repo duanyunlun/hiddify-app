@@ -395,6 +395,31 @@
         },
         "generalOptions": {
           "title": "Route general options",
+          "systemProxyBypass": {
+            "title": "System proxy bypass",
+            "subtitle": "${count} extra bypass entry(ies)",
+            "description": "Entries listed here are not handed to this app: Windows connects to them directly. It should normally stay empty, because routing belongs to the rules on the routing screen and a second filter at the Windows layer only fights them, as when an entry left behind by another tool makes the browser skip the proxy and a site stays unreachable however the rules are written.",
+            "notApplied": "This system does not support changing the setting, so the list is only stored.",
+            "localAlwaysKept": "Always kept (local network)",
+            "yourEntries": "Your extra entries",
+            "clear": "Clear all",
+            "empty": "No extra entries. Windows connects to local and private addresses directly and everything else goes to this app to be routed by its rules.",
+            "add": "Add entry",
+            "edit": "Edit",
+            "delete": "Delete",
+            "save": "Save",
+            "cancel": "Cancel",
+            "reload": "Reload from system",
+            "pattern": "Domain or IP range",
+            "patternHelper": "For example *.example.com or 10.0.0.0/8",
+            "invalid": "Could not add it: ${problem}",
+            "problems": {
+              "empty": "it is empty",
+              "separator": "it contains a semicolon",
+              "whitespace": "it contains whitespace",
+              "duplicate": "it is already in the list"
+            }
+          },
           "region": "Region",
           "regions": {
             "ir": "Iran (ir)",

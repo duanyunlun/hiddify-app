@@ -9,6 +9,7 @@ import 'package:hiddify/core/router/go_router/helper/active_breakpoint_notifier.
 import 'package:hiddify/core/router/go_router/helper/custom_transition.dart';
 import 'package:hiddify/core/router/go_router/refresh_listenable.dart';
 import 'package:hiddify/features/about/widget/about_page.dart';
+import 'package:hiddify/features/core_update/overview/core_update_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
 import 'package:hiddify/features/intro/widget/intro_page.dart';
 import 'package:hiddify/features/log/overview/logs_page.dart';
@@ -19,7 +20,6 @@ import 'package:hiddify/features/profile/overview/profiles_page.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_page.dart';
 import 'package:hiddify/features/route_rules/notifier/rule_notifier.dart';
 import 'package:hiddify/features/route_rules/overview/generic_list_page.dart';
-import 'package:hiddify/features/core_update/overview/core_update_page.dart';
 import 'package:hiddify/features/route_rules/overview/rule_page.dart';
 import 'package:hiddify/features/rule_sets/overview/rule_sets_page.dart';
 import 'package:hiddify/features/settings/overview/sections/chain_options_page.dart';
@@ -29,6 +29,7 @@ import 'package:hiddify/features/settings/overview/sections/inbound_options_page
 import 'package:hiddify/features/settings/overview/sections/routing_options_page.dart';
 import 'package:hiddify/features/settings/overview/sections/tls_tricks_page.dart';
 import 'package:hiddify/features/settings/overview/settings_page.dart';
+import 'package:hiddify/features/system_proxy/overview/system_proxy_bypass_page.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -212,6 +213,15 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                             TransitionType.slide,
                             state.pageKey,
                             const RuleSetsPage(),
+                          ),
+                        ),
+                        GoRoute(
+                          name: 'systemProxyBypass',
+                          path: 'system-proxy-bypass',
+                          pageBuilder: (_, state) => customTransition(
+                            TransitionType.slide,
+                            state.pageKey,
+                            const SystemProxyBypassPage(),
                           ),
                         ),
                         GoRoute(

@@ -14,6 +14,7 @@ import 'package:hiddify/features/route_rules/widget/rule_tile.dart';
 import 'package:hiddify/features/rule_sets/overview/rule_set_catalog_sheet.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/settings/widget/preference_tile.dart';
+import 'package:hiddify/features/system_proxy/notifier/system_proxy_bypass_notifier.dart';
 import 'package:hiddify/singbox/model/singbox_config_enum.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -219,6 +220,18 @@ class RoutingOptionsPage extends HookConsumerWidget {
                     }
                   },
                 ),
+                if (PlatformUtils.isWindows)
+                  ListTile(
+                    leading: const Icon(Icons.block_rounded),
+                    title: Text(t.pages.settings.routing.generalOptions.systemProxyBypass.title),
+                    subtitle: Text(
+                      t.pages.settings.routing.generalOptions.systemProxyBypass.subtitle(
+                        count: ref.watch(systemProxyBypassProvider).entries.length.toString(),
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.goNamed('systemProxyBypass'),
+                  ),
                 if (PlatformUtils.isAndroid)
                   ListTile(
                     title: Text(t.pages.settings.routing.generalOptions.perAppProxy.title),
