@@ -38,6 +38,11 @@ on:
         type: string
         required: true
         default: "v4.1.0-f1-app"
+      build_windows:
+        description: "Also build the Windows package (currently blocked by an upstream sentry-native failure, and windows runners bill at double rate)"
+        type: boolean
+        required: true
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -147,10 +152,13 @@ jobs:
 
   windows-zip:
     name: Windows portable
-    # Pin the 2022 image on purpose. On windows-latest the toolchain is Visual
-    # Studio 18 (v180) and the sentry-native CMake step that sentry_flutter pulls
-    # in fails there with MSB3073; the build succeeds with the Visual Studio 2022
-    # toolchain (v143), which this image provides.
+    # Off by default: `flutter build windows` currently fails in CI inside the
+    # sentry-native CMake install step that sentry_flutter pulls in (MSB3073),
+    # which is an upstream problem rather than one in this tree. The same source
+    # builds fine with a local Visual Studio 2022 toolchain, so the Windows
+    # package is produced locally and this leg only runs on request. Keeping it
+    # off also avoids the double rate windows runners are billed at.
+    if: ${{ inputs.build_windows }}
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
