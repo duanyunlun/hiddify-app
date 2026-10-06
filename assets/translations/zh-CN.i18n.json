@@ -319,7 +319,8 @@
           }
         },
         "ruleSets": {
-          "title": "规则集",
+          "title": "已添加的规则集",
+          "market": "规则市场",
           "enabledCount": "${count} 个规则集已启用并下发给内核。",
           "noneEnabled": "未启用任何规则集。引用规则集的路由规则将不会生效。",
           "clear": "清空",
@@ -368,7 +369,8 @@
             "duplicate": "标签 “${tag}” 的规则集已存在"
           },
           "catalog": {
-            "title": "规则集目录",
+            "title": "规则市场",
+            "manageAdded": "已添加的规则集",
             "urlLabel": "目录 URL",
             "urlHelper": "包含 {geosite, geoip, list[]} 的 JSON —— 可改成其他来源",
             "useThisUrl": "使用此 URL",

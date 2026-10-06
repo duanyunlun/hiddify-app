@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/features/rule_sets/notifier/rule_sets_notifier.dart';
 import 'package:hiddify/features/rule_sets/overview/rule_set_route_prompt.dart';
@@ -52,6 +53,17 @@ class RuleSetCatalogSheet extends HookConsumerWidget {
             child: Row(
               children: [
                 Expanded(child: Text(c.title, style: theme.textTheme.titleLarge)),
+                IconButton(
+                  tooltip: c.manageAdded,
+                  // Leaves the market for the screen that lists what has been
+                  // added, where rule sets are enabled, edited or removed.
+                  onPressed: () {
+                    final router = GoRouter.of(context);
+                    Navigator.of(context).pop();
+                    router.goNamed('ruleSets');
+                  },
+                  icon: const Icon(Icons.playlist_add_check_rounded),
+                ),
                 if (state.isLoadingCatalog)
                   const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 else

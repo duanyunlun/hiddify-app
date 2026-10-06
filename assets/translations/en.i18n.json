@@ -319,7 +319,8 @@
           }
         },
         "ruleSets": {
-          "title": "Rule sets",
+          "title": "My rule sets",
+          "market": "Rule market",
           "enabledCount": "${count} rule set(s) enabled and sent to the core.",
           "noneEnabled": "No rule set enabled. Routing rules that reference a rule set will not work.",
           "clear": "Clear",
@@ -368,7 +369,8 @@
             "duplicate": "A rule set with tag \"${tag}\" already exists"
           },
           "catalog": {
-            "title": "Rule set catalog",
+            "title": "Rule market",
+            "manageAdded": "My rule sets",
             "urlLabel": "Catalog URL",
             "urlHelper": "JSON with {geosite, geoip, list[]} - change it to use another source",
             "useThisUrl": "Use this URL",

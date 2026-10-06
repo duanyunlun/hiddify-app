@@ -11,6 +11,7 @@ import 'package:hiddify/features/per_app_proxy/model/per_app_proxy_mode.dart';
 import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_notifier.dart';
 import 'package:hiddify/features/route_rules/notifier/rules_notifier.dart';
 import 'package:hiddify/features/route_rules/widget/rule_tile.dart';
+import 'package:hiddify/features/rule_sets/overview/rule_set_catalog_sheet.dart';
 import 'package:hiddify/features/settings/data/config_option_repository.dart';
 import 'package:hiddify/features/settings/widget/preference_tile.dart';
 import 'package:hiddify/singbox/model/singbox_config_enum.dart';
@@ -121,9 +122,17 @@ class RoutingOptionsPage extends HookConsumerWidget {
                       onTap: () => context.goNamed('rule', pathParameters: {'orderId': 'new'}),
                     ),
                     _FabMenuItem(
-                      icon: Icons.rule_folder_rounded,
-                      label: t.pages.settings.routing.ruleSets.title,
-                      onTap: () => context.goNamed('ruleSets'),
+                      icon: Icons.storefront_rounded,
+                      // Opens the market (browse and search) directly. The list of
+                      // already added rule sets is a separate screen, reachable
+                      // from the market's own app bar.
+                      label: t.pages.settings.routing.ruleSets.market,
+                      onTap: () => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) => const RuleSetCatalogSheet(),
+                      ),
                     ),
                     _FabMenuItem(
                       icon: Icons.view_list_rounded,
