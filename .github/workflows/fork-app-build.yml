@@ -66,6 +66,10 @@ env:
   CORE_REPO: "${{ inputs.core_repo }}"
   CORE_TAG: "${{ inputs.core_tag }}"
   TARGET: "lib/main_prod.dart"
+  # Required by the app Makefile: CORE_URL only resolves to the tag above when
+  # CHANNEL is exactly "prod", otherwise it points at the draft release and the
+  # download returns a 404 page that tar then refuses.
+  CHANNEL: "${{ inputs.channel }}"
 
 jobs:
   android-apk:
