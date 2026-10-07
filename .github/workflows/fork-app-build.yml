@@ -66,10 +66,13 @@ env:
   CORE_REPO: "${{ inputs.core_repo }}"
   CORE_TAG: "${{ inputs.core_tag }}"
   TARGET: "lib/main_prod.dart"
-  # Required by the app Makefile: CORE_URL only resolves to the tag above when
-  # CHANNEL is exactly "prod", otherwise it points at the draft release and the
-  # download returns a 404 page that tar then refuses.
-  CHANNEL: "${{ inputs.channel }}"
+  # CHANNEL is deliberately not set here. The app Makefile needs it to resolve
+  # CORE_URL (anything other than "prod" points at the draft release), but
+  # subosito/flutter-action reads a CHANNEL environment variable as its own
+  # channel input, and "prod" is not a valid channel: setting it at this level
+  # makes every Setup Flutter step fail with
+  # "Unable to determine Flutter version for channel: prod".
+  # The two steps that call `make` set it themselves.
 
 jobs:
   android-apk:
@@ -252,6 +255,8 @@ jobs:
       # macOS. `macos-prepare` only runs pub get, build_runner, slang and the
       # core download.
       - name: Prepare
+        env:
+          CHANNEL: "${{ inputs.channel }}"
         run: make macos-prepare
 
       - name: Build
@@ -312,6 +317,8 @@ jobs:
             libblkid1 liblzma5 libayatana-appindicator3-dev
 
       - name: Prepare
+        env:
+          CHANNEL: "${{ inputs.channel }}"
         run: make linux-amd64-prepare
 
       - name: Build
