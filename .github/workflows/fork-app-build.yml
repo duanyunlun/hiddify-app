@@ -43,6 +43,16 @@ on:
         type: boolean
         required: true
         default: false
+      build_macos:
+        description: "Build the macOS package (.dmg plus a portable .app zip). Needs the core release to carry hiddify-lib-macos.tar.gz"
+        type: boolean
+        required: true
+        default: true
+      build_linux:
+        description: "Build the Linux package (portable tar.gz, plus a .deb when fastforge succeeds). Needs hiddify-lib-linux-amd64.tar.gz in the core release"
+        type: boolean
+        required: true
+        default: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -218,4 +228,123 @@ jobs:
         with:
           tag_name: ${{ inputs.release_tag }}
           files: out/*.zip
+          fail_on_unmatched_files: false
+
+  macos:
+    name: macOS package
+    if: ${{ inputs.build_macos }}
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      # `make macos-install-deps` (brew, create-dmg, appdmg, fastforge) is not
+      # needed: the package is built with ditto and hdiutil, which ship with
+      # macOS. `macos-prepare` only runs pub get, build_runner, slang and the
+      # core download.
+      - name: Prepare
+        run: make macos-prepare
+
+      - name: Build
+        run: flutter build macos --release --target ${{ env.TARGET }}
+
+      - name: Package dmg and portable zip
+        run: |
+          set -e
+          mkdir -p out
+          APP="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -n1)"
+          test -n "$APP" || { echo "no .app produced"; exit 1; }
+          echo "app: $APP"
+          # The bundle is not signed, so a dmg and a plain zip of the .app are
+          # both provided; the zip is the fallback when a download carries the
+          # quarantine attribute and Gatekeeper refuses the dmg copy.
+          hdiutil create -volname "Hiddify" -srcfolder "$APP" -ov -format UDZO "out/Hiddify-macOS.dmg"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "out/Hiddify-macOS-portable.zip"
+          ls -lh out/
+          # The universal core library must be inside the bundle, otherwise the
+          # app starts and immediately fails to open the core.
+          ls -l "$APP/Contents/Frameworks/" | head -n 20
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hiddify-macOS
+          path: out/*
+          retention-days: 7
+
+      - name: Publish to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: out/*
+          fail_on_unmatched_files: false
+
+  linux:
+    name: Linux package
+    if: ${{ inputs.build_linux }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      # Only the GTK build dependencies are needed. `make linux-install-deps`
+      # additionally installs appimagetool, loads the fuse module and clones its
+      # own Flutter SDK, none of which this workflow wants: the SDK is provided
+      # by the action above and the package is a plain tarball.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev \
+            libblkid1 liblzma5 libayatana-appindicator3-dev
+
+      - name: Prepare
+        run: make linux-amd64-prepare
+
+      - name: Build
+        run: flutter build linux --release --target ${{ env.TARGET }}
+
+      - name: Package
+        run: |
+          set -e
+          mkdir -p out
+          tar -czf out/Hiddify-Linux-x64-portable.tar.gz -C build/linux/x64/release/bundle .
+          ls -lh out/
+          # The core library has to be inside the bundle, otherwise the app
+          # starts and immediately fails to open the core.
+          ls -l build/linux/x64/release/bundle/lib/
+
+      # A .deb is nicer to install, but it needs fastforge and packaging tools
+      # that are more likely to break than the tarball, so a failure here must
+      # not lose the tarball.
+      - name: Try a .deb as well
+        continue-on-error: true
+        run: |
+          dart pub global activate fastforge
+          export PATH="$PATH:$HOME/.pub-cache/bin"
+          fastforge package --platform linux --targets deb \
+            --skip-clean --build-target ${{ env.TARGET }} || exit 0
+          find dist -name '*.deb' -exec cp -v {} out/ \; || true
+          ls -lh out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hiddify-Linux
+          path: out/*
+          retention-days: 7
+
+      - name: Publish to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: out/*
           fail_on_unmatched_files: false
