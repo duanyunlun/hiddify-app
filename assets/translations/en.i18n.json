@@ -398,12 +398,12 @@
           "systemProxyBypass": {
             "title": "System proxy bypass",
             "subtitle": "${count} extra bypass entry(ies)",
-            "description": "Entries listed here are not handed to this app: Windows connects to them directly. It should normally stay empty, because routing belongs to the rules on the routing screen and a second filter at the Windows layer only fights them, as when an entry left behind by another tool makes the browser skip the proxy and a site stays unreachable however the rules are written.",
-            "notApplied": "This system does not support changing the setting, so the content is only stored.",
-            "localAlwaysKept": "Always kept (local network, no need to type it)",
+            "description": "Entries listed here are not handed to this app: the operating system connects to them directly. It should normally stay empty, because routing belongs to the rules on the routing screen and a second filter at the system layer only fights them, as when an entry left behind by another tool makes the browser skip the proxy and a site stays unreachable however the rules are written.",
+            "notApplied": "This system does not support changing the setting, or the change needs a privilege it does not have, so the content is only stored.",
+            "localAlwaysKept": "Always kept (local and private addresses, no need to type it)",
             "yourEntries": "Your extra entries",
             "entryHelper": "Separated by semicolons, for example *.example.com; 10.0.0.0/8",
-            "effective": "Value written to Windows",
+            "effective": "Value written to the system",
             "clear": "Clear",
             "reload": "Reload from system"
           },

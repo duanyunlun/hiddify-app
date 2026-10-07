@@ -26,22 +26,40 @@ class SystemProxyBypassPage extends HookConsumerWidget {
     final state = ref.watch(systemProxyBypassProvider);
     final notifier = ref.read(systemProxyBypassProvider.notifier);
 
-    final controller = useTextEditingController(text: formatUserEntryText(state.entries));
+    final controller = useTextEditingController();
     final pending = useRef<Timer?>(null);
+    final filled = useRef(false);
 
-    // Writing the registry on every keystroke would be wasteful, and the field
+    // The current value is read back from the system asynchronously, so the field
+    // is filled once it arrives and never afterwards, or the text would be reset
+    // while it is being typed in.
+    useEffect(() {
+      if (!state.loaded || filled.value) return null;
+      filled.value = true;
+      controller.text = formatUserEntryText(state.entries);
+      return null;
+    }, [state.loaded]);
+
+    // Writing the setting on every keystroke would be wasteful, and the field
     // must not be reset while it is being typed in, so the value is committed
     // once the typing pauses.
     void commitAfterPause(String value) {
       pending.value?.cancel();
       pending.value = Timer(const Duration(milliseconds: 600), () {
-        notifier.setEntries(parseUserEntryText(value));
+        unawaited(notifier.setEntries(parseUserEntryText(value)));
       });
     }
 
     useEffect(() {
       return () => pending.value?.cancel();
     }, const []);
+
+    if (!state.loaded) {
+      return Scaffold(
+        appBar: AppBar(title: Text(s.title)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -50,16 +68,17 @@ class SystemProxyBypassPage extends HookConsumerWidget {
           IconButton(
             tooltip: s.reload,
             icon: const Icon(Icons.sync_rounded),
-            onPressed: () {
+            onPressed: () async {
               pending.value?.cancel();
-              notifier.reloadFromSystem();
+              await notifier.reloadFromSystem();
+              if (!context.mounted) return;
               controller.text = formatUserEntryText(ref.read(systemProxyBypassProvider).entries);
             },
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               pending.value?.cancel();
-              notifier.clear();
+              await notifier.clear();
               controller.text = '';
             },
             child: Text(s.clear),
@@ -76,7 +95,7 @@ class SystemProxyBypassPage extends HookConsumerWidget {
             const Gap(16),
             Text(s.localAlwaysKept, style: theme.textTheme.labelLarge),
             const Gap(4),
-            Text(kLocalSystemProxyBypass.join('; '), style: theme.textTheme.bodySmall),
+            Text(notifier.localEntries.join('; '), style: theme.textTheme.bodySmall),
             const Gap(20),
             TextField(
               controller: controller,
@@ -110,7 +129,10 @@ class SystemProxyBypassPage extends HookConsumerWidget {
             Text(s.effective, style: theme.textTheme.labelLarge),
             const Gap(4),
             SelectableText(
-              systemProxyOverrideValue(state.entries),
+              // Shown the way the platform stores it, so the value can be
+              // compared with the registry on Windows or with
+              // `networksetup -getproxybypassdomains` on macOS.
+              notifier.effectiveEntries.join(notifier.separator),
               style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
             ),
           ],

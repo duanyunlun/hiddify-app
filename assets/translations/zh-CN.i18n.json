@@ -398,12 +398,12 @@
           "systemProxyBypass": {
             "title": "系统代理绕过",
             "subtitle": "额外绕过 ${count} 条",
-            "description": "这里的条目不交给本软件，而是由 Windows 直接连接。正常情况下应保持为空：分流由「路由」里的规则决定，Windows 层再拦一道只会互相打架——比如别的工具留下的 *.steampowered.com 会让浏览器绕过代理，规则怎么配都打不开。",
-            "notApplied": "当前系统不支持改写该设置，内容只会被保存。",
-            "localAlwaysKept": "始终保留（局域网，无需填写）",
+            "description": "这里的条目不交给本软件，而是由操作系统直接连接。正常情况下应保持为空：分流由「路由」里的规则决定，系统层再拦一道只会互相打架——比如别的工具留下的 *.steampowered.com 会让浏览器绕过代理，规则怎么配都打不开。",
+            "notApplied": "当前系统不支持改写该设置，或没有修改权限，内容只会被保存。",
+            "localAlwaysKept": "始终保留（本机与局域网，无需填写）",
             "yourEntries": "你的额外条目",
             "entryHelper": "用分号 ; 分隔，例如 *.example.com; 10.0.0.0/8；全角分号也能识别",
-            "effective": "实际写入 Windows 的值",
+            "effective": "实际写入系统的值",
             "clear": "清空",
             "reload": "从系统重新读取"
           },

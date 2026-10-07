@@ -42,29 +42,45 @@ const kLocalSystemProxyBypass = <String>[
   '<local>',
 ];
 
-/// Splits a `ProxyOverride` value into its entries.
-List<String> parseSystemProxyOverride(String? raw) {
+/// Entries macOS keeps in a stock network service: the mDNS name space and the
+/// link-local range. `networksetup -getproxybypassdomains` reports exactly these
+/// on a service that was never touched.
+const kLocalMacSystemProxyBypass = <String>['*.local', '169.254/16'];
+
+/// Splits a list of bypass entries into its items.
+///
+/// Windows stores the list as one semicolon separated value; macOS reports one
+/// entry per line, so the separator is a parameter.
+List<String> parseSystemProxyOverride(String? raw, {String separator = ';'}) {
   if (raw == null) return const [];
-  return raw.split(';').map((entry) => entry.trim()).where((entry) => entry.isNotEmpty).toList(growable: false);
+  return raw.split(separator).map((entry) => entry.trim()).where((entry) => entry.isNotEmpty).toList(growable: false);
 }
 
 /// True when [entry] is one of the entries this app always maintains itself.
-bool isLocalSystemProxyBypassEntry(String entry) {
+bool isLocalSystemProxyBypassEntry(String entry, {List<String> localEntries = kLocalSystemProxyBypass}) {
   final normalized = entry.trim().toLowerCase();
-  return kLocalSystemProxyBypass.any((local) => local.toLowerCase() == normalized);
+  return localEntries.any((local) => local.toLowerCase() == normalized);
 }
 
 /// The user's own entries: whatever is in [raw] that the app does not own.
-List<String> userSystemProxyBypassEntries(String? raw) =>
-    parseSystemProxyOverride(raw).where((entry) => !isLocalSystemProxyBypassEntry(entry)).toList(growable: false);
+List<String> userSystemProxyBypassEntries(
+  String? raw, {
+  List<String> localEntries = kLocalSystemProxyBypass,
+  String separator = ';',
+}) => parseSystemProxyOverride(raw, separator: separator)
+    .where((entry) => !isLocalSystemProxyBypassEntry(entry, localEntries: localEntries))
+    .toList(growable: false);
 
 /// Builds the value to write: the local entries followed by the user's.
 ///
 /// Duplicates are dropped, local entries are matched case insensitively.
-List<String> composeSystemProxyOverride(Iterable<String> userEntries) {
+List<String> composeSystemProxyOverride(
+  Iterable<String> userEntries, {
+  List<String> localEntries = kLocalSystemProxyBypass,
+}) {
   final seen = <String>{};
   final result = <String>[];
-  for (final entry in [...kLocalSystemProxyBypass, ...userEntries]) {
+  for (final entry in [...localEntries, ...userEntries]) {
     final trimmed = entry.trim();
     if (trimmed.isEmpty) continue;
     if (seen.add(trimmed.toLowerCase())) result.add(trimmed);
@@ -72,9 +88,12 @@ List<String> composeSystemProxyOverride(Iterable<String> userEntries) {
   return result;
 }
 
-/// The value written to the registry, i.e. [composeSystemProxyOverride] joined
-/// with the separator Windows expects.
-String systemProxyOverrideValue(Iterable<String> userEntries) => composeSystemProxyOverride(userEntries).join(';');
+/// The value Windows expects, i.e. [composeSystemProxyOverride] joined with the
+/// separator the registry uses.
+String systemProxyOverrideValue(
+  Iterable<String> userEntries, {
+  List<String> localEntries = kLocalSystemProxyBypass,
+}) => composeSystemProxyOverride(userEntries, localEntries: localEntries).join(';');
 
 /// Parses the text the user typed into entries.
 ///

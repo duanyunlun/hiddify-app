@@ -220,7 +220,9 @@ class RoutingOptionsPage extends HookConsumerWidget {
                     }
                   },
                 ),
-                if (PlatformUtils.isWindows)
+                // macOS keeps the same list, per network service, and its core
+                // ignores the bypass value it is handed just like on Windows.
+                if (PlatformUtils.isWindows || PlatformUtils.isMacOS)
                   ListTile(
                     leading: const Icon(Icons.block_rounded),
                     title: Text(t.pages.settings.routing.generalOptions.systemProxyBypass.title),

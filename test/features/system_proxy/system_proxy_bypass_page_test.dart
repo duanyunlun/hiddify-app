@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/features/system_proxy/data/system_proxy_override_store.dart';
+import 'package:hiddify/features/system_proxy/data/windows_proxy_override_store.dart';
 import 'package:hiddify/features/system_proxy/notifier/system_proxy_bypass_notifier.dart';
 import 'package:hiddify/features/system_proxy/overview/system_proxy_bypass_page.dart';
 import 'package:hiddify/gen/translations.g.dart';
@@ -50,8 +50,8 @@ void main() {
         overrides: [
           translationsProvider.overrideWith((ref) => translations),
           sharedPreferencesProvider.overrideWith((ref) => preferences),
-          systemProxyOverrideStoreProvider.overrideWithValue(
-            SystemProxyOverrideStore(keyPath: _scratchKeyPath),
+          systemProxyBypassStoreProvider.overrideWithValue(
+            WindowsProxyOverrideStore(keyPath: _scratchKeyPath),
           ),
         ],
         child: const MaterialApp(home: SystemProxyBypassPage()),
@@ -75,11 +75,11 @@ void main() {
     // The startup write already put the local entries in place, so the check is
     // that the typed entries are not written yet while typing is still going on.
     await tester.pump(const Duration(milliseconds: 200));
-    final beforePause = SystemProxyOverrideStore(keyPath: _scratchKeyPath).read();
+    final beforePause = await WindowsProxyOverrideStore(keyPath: _scratchKeyPath).read();
     expect(beforePause, isNot(contains('*.example.com')));
 
     await tester.pump(const Duration(milliseconds: 700));
-    final written = SystemProxyOverrideStore(keyPath: _scratchKeyPath).read();
+    final written = await WindowsProxyOverrideStore(keyPath: _scratchKeyPath).read();
     expect(written, isNotNull);
     expect(written, contains('*.example.com'));
     expect(written, contains('10.0.0.0/8'));
@@ -94,7 +94,7 @@ void main() {
     await tester.enterText(find.byType(TextField), '*.a.com；*.b.com');
     await tester.pump(const Duration(milliseconds: 700));
 
-    final written = SystemProxyOverrideStore(keyPath: _scratchKeyPath).read()!;
+    final written = (await WindowsProxyOverrideStore(keyPath: _scratchKeyPath).read())!;
     expect(written, contains('*.a.com'));
     expect(written, contains('*.b.com'));
   });
@@ -105,7 +105,7 @@ void main() {
     await tester.tap(find.text('Clear'));
     await tester.pumpAndSettle();
 
-    final written = SystemProxyOverrideStore(keyPath: _scratchKeyPath).read()!;
+    final written = (await WindowsProxyOverrideStore(keyPath: _scratchKeyPath).read())!;
     expect(written, isNot(contains('*.a.com')));
     expect(written, contains('localhost'));
   });
