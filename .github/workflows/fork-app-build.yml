@@ -293,8 +293,16 @@ jobs:
             ln -s /Applications "$STAGE/Applications"
             hdiutil create -volname "Hiddify" -srcfolder "$STAGE" -ov -format UDZO "out/Hiddify-macOS.dmg"
           fi
-          # fastforge writes into dist/
-          find dist -name '*.dmg' -exec cp -v {} out/ \; 2>/dev/null || true
+          # fastforge writes into dist/ under a name of its own
+          # (hiddify-<version>-macos.dmg); use a stable name so the download link
+          # does not change between versions and matches the other platforms.
+          DMG_SRC="$(find dist -name '*.dmg' | head -n1)"
+          if [ -n "$DMG_SRC" ]; then
+            cp -v "$DMG_SRC" out/Hiddify-macOS.dmg
+          elif [ ! -f out/Hiddify-macOS.dmg ]; then
+            echo "no dmg was produced"
+            exit 1
+          fi
 
           # A zip of the bundle as well: the app is only ad-hoc signed, so a
           # download that carries the quarantine attribute can be refused by
