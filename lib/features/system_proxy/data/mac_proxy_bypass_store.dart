@@ -23,15 +23,20 @@ typedef SystemProxyCommandRunner = Future<ProcessResult> Function(String executa
 /// The service is the one backing the current default route, because the list is
 /// per service and that is the service the core configures.
 class MacProxyBypassStore with InfraLogger implements SystemProxyBypassStore {
-  MacProxyBypassStore({SystemProxyCommandRunner? runner}) : _run = runner ?? _defaultRunner;
+  MacProxyBypassStore({SystemProxyCommandRunner? runner, bool? supportedOverride})
+    : _run = runner ?? _defaultRunner,
+      _supportedOverride = supportedOverride;
 
   final SystemProxyCommandRunner _run;
+
+  /// Lets a test exercise the command paths on a machine that is not a Mac.
+  final bool? _supportedOverride;
 
   static Future<ProcessResult> _defaultRunner(String executable, List<String> arguments) =>
       Process.run(executable, arguments);
 
   @override
-  bool get isSupported => Platform.isMacOS;
+  bool get isSupported => _supportedOverride ?? Platform.isMacOS;
 
   @override
   List<String> get localEntries => kLocalMacSystemProxyBypass;
@@ -124,6 +129,14 @@ class MacProxyBypassStore with InfraLogger implements SystemProxyBypassStore {
       return false;
     }
     final entries = composeSystemProxyOverride(userEntries, localEntries: localEntries);
+
+    // Try without privileges first. Whether the current user may change its own
+    // network services depends on the setup, and on the ones where it may, an
+    // authorisation prompt is pure friction. A failed attempt changes nothing,
+    // so the privileged retry below starts from the same state.
+    if (await _runPlain(service, entries)) return true;
+
+    // Otherwise ask for authorisation, which macOS shows as its standard window.
     try {
       final result = await _run('osascript', ['-e', macBypassApplyScript(service, entries)]);
       if (result.exitCode != 0) {
@@ -132,20 +145,35 @@ class MacProxyBypassStore with InfraLogger implements SystemProxyBypassStore {
         loggy.error('the bypass domains could not be applied: ${result.stderr}');
         return false;
       }
-      loggy.debug('wrote bypass domains for $service: ${entries.join(", ")}');
+      loggy.debug('wrote bypass domains for $service with authorisation: ${entries.join(", ")}');
       return true;
     } catch (e) {
       loggy.error('could not write the bypass domains: $e');
       return false;
     }
   }
+
+  Future<bool> _runPlain(String service, List<String> entries) async {
+    try {
+      final result = await _run('networksetup', ['-setproxybypassdomains', service, ...entries]);
+      if (result.exitCode != 0) {
+        loggy.debug('writing without privileges did not work, asking for authorisation: ${result.stderr}');
+        return false;
+      }
+      loggy.debug('wrote bypass domains for $service: ${entries.join(", ")}');
+      return true;
+    } catch (e) {
+      loggy.debug('writing without privileges failed, asking for authorisation: $e');
+      return false;
+    }
+  }
 }
 
-/// The AppleScript that changes the bypass list.
+/// The AppleScript that changes the bypass list with authorisation.
 ///
-/// macOS has no "run as administrator": changing a network service needs root,
-/// so the request goes through the standard authorisation prompt, which is what
-/// `with administrator privileges` shows. One prompt covers the whole list
+/// macOS has no "run as administrator": where changing a network service needs
+/// root, the request goes through the standard authorisation prompt, which is
+/// what `with administrator privileges` shows. One prompt covers the whole list
 /// because it is a single command.
 ///
 /// Public and separate from the command runner so the quoting can be tested

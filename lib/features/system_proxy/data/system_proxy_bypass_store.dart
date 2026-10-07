@@ -21,7 +21,7 @@ abstract interface class SystemProxyBypassStore {
   /// How the platform separates entries in its own representation.
   String get separator;
 
-  /// True when writing raises an authorisation prompt, so the value must only be
+  /// True when writing may raise an authorisation prompt, so the value must only
   /// written when the user asks for it rather than on every keystroke.
   bool get requiresAuthorisationForWrite;
 

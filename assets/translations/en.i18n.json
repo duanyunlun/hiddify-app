@@ -401,7 +401,7 @@
             "description": "Entries listed here are not handed to this app: the operating system connects to them directly. It should normally stay empty, because routing belongs to the rules on the routing screen and a second filter at the system layer only fights them, as when an entry left behind by another tool makes the browser skip the proxy and a site stays unreachable however the rules are written.",
             "notApplied": "Applying failed: the authorisation was dismissed, or this system does not allow the setting to be changed.",
             "unsupportedNote": "This system has no such setting, so the content is only stored.",
-            "pendingNote": "The change is not applied yet. Saving opens the system authorisation window and asks for an administrator password.",
+            "pendingNote": "The change is not applied yet. Press Save to apply it; if the system requires authorisation, a window asks for an administrator password.",
             "save": "Save",
             "localAlwaysKept": "Always kept (local and private addresses, no need to type it)",
             "yourEntries": "Your extra entries",

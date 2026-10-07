@@ -24,29 +24,53 @@ destination: default
 ''';
 
 class _FakeRunner {
-  _FakeRunner({this.exitCode = 0});
+  _FakeRunner({this.plainWriteWorks = false});
 
   String bypassDomains = '';
-  final int exitCode;
+
+  /// False makes the unprivileged `networksetup` write fail, which is the case
+  /// that has to fall back to the authorisation prompt.
+  final bool plainWriteWorks;
+
+  /// Makes the authorisation prompt answer "cancelled", as osascript reports it.
+  bool promptCancelled = false;
+
   final List<List<String>> calls = [];
 
   Future<ProcessResult> call(String executable, List<String> arguments) async {
     calls.add([executable, ...arguments]);
     if (executable == 'route') return ProcessResult(0, 0, _defaultRoute, '');
+    if (executable == 'osascript') {
+      if (promptCancelled) return ProcessResult(0, 1, '', 'execution error: User canceled. (-128)');
+      // The authorised path: the AppleScript embeds the networksetup command.
+      final script = arguments.length > 1 ? arguments[1] : '';
+      if (RegExp(r"'(-setproxybypassdomains)'").hasMatch(script)) bypassDomains = _entriesFromScript(script);
+      return ProcessResult(0, 0, '', '');
+    }
     if (arguments.first == '-listnetworkserviceorder') return ProcessResult(0, 0, _serviceOrder, '');
     if (arguments.first == '-getproxybypassdomains') {
       return ProcessResult(
         0,
-        exitCode,
+        0,
         bypassDomains.isEmpty ? "There aren't any bypass domains set on Wi-Fi." : bypassDomains,
         '',
       );
     }
     if (arguments.first == '-setproxybypassdomains') {
+      if (!plainWriteWorks) {
+        return ProcessResult(0, 1, '', 'You must be root to run this tool.');
+      }
       bypassDomains = arguments.skip(2).join('\n');
-      return ProcessResult(0, exitCode, '', exitCode == 0 ? '' : 'You must be root to run this tool.');
+      return ProcessResult(0, 0, '', '');
     }
     return ProcessResult(0, 1, '', 'unexpected command');
+  }
+
+  /// Pulls the entries back out of the quoted AppleScript command.
+  String _entriesFromScript(String script) {
+    final quoted = RegExp(r"'((?:[^'\\]|\\.)*)'").allMatches(script).map((m) => m.group(1)!).toList();
+    // networksetup, -setproxybypassdomains, <service>, then the entries.
+    return quoted.skip(3).join('\n');
   }
 }
 
@@ -113,9 +137,39 @@ void main() {
       expect(await store.read(), isNull);
     });
 
-    test('writes need authorisation, reads do not', () {
+    test('writes may need authorisation, reads do not', () {
       final store = MacProxyBypassStore(runner: _FakeRunner().call);
       expect(store.requiresAuthorisationForWrite, isTrue);
+    });
+
+    test('writes without privileges when that works, asking for nothing', () async {
+      final runner = _FakeRunner(plainWriteWorks: true);
+      final store = MacProxyBypassStore(runner: runner.call, supportedOverride: true);
+
+      expect(await store.write(['*.example.com']), isTrue);
+      // No authorisation prompt at all.
+      expect(runner.calls.any((call) => call.first == 'osascript'), isFalse);
+      expect(await store.currentUserEntries(), ['*.example.com']);
+    });
+
+    test('falls back to authorisation when the plain write is refused', () async {
+      final runner = _FakeRunner(plainWriteWorks: false);
+      final store = MacProxyBypassStore(runner: runner.call, supportedOverride: true);
+
+      expect(await store.write(['*.example.com']), isTrue);
+      final osascript = runner.calls.where((call) => call.first == 'osascript').toList();
+      expect(osascript, hasLength(1));
+      // [0] is the executable, [1] is the -e flag, [2] is the script.
+      expect(osascript.single[2], contains('with administrator privileges'));
+      expect(await store.currentUserEntries(), contains('*.example.com'));
+      // The platform entries survive either way.
+      expect(await store.currentUserEntries(), isNot(contains('*.local')));
+    });
+
+    test('a dismissed prompt is reported as a failure', () async {
+      final runner = _FakeRunner(plainWriteWorks: false)..promptCancelled = true;
+      final store = MacProxyBypassStore(runner: runner.call, supportedOverride: true);
+      expect(await store.write(['*.example.com']), isFalse);
     });
   });
 
