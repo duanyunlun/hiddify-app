@@ -269,20 +269,46 @@ jobs:
         run: flutter build macos --release --target ${{ env.TARGET }}
 
       - name: Package dmg and portable zip
+        env:
+          CHANNEL: "${{ inputs.channel }}"
         run: |
           set -e
           mkdir -p out
           APP="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -n1)"
           test -n "$APP" || { echo "no .app produced"; exit 1; }
           echo "app: $APP"
-          # The bundle is not signed, so a dmg and a plain zip of the .app are
-          # both provided; the zip is the fallback when a download carries the
-          # quarantine attribute and Gatekeeper refuses the dmg copy.
-          hdiutil create -volname "Hiddify" -srcfolder "$APP" -ov -format UDZO "out/Hiddify-macOS.dmg"
+
+          # The signed-looking drag-to-Applications layout comes from the dmg
+          # description the repository already carries in
+          # macos/packaging/dmg/make_config.yaml (a background image plus a link
+          # to /Applications). fastforge is what reads it, which is why the
+          # dmg is built through it rather than with a bare hdiutil image.
+          make macos-install-deps
+          export PATH="$PATH:$HOME/.pub-cache/bin"
+          if ! fastforge package --platform macos --targets dmg \
+                 --skip-clean --build-target "${{ env.TARGET }}"; then
+            echo "fastforge failed; falling back to a plain image that still links /Applications"
+            STAGE="$(mktemp -d)"
+            cp -R "$APP" "$STAGE/"
+            ln -s /Applications "$STAGE/Applications"
+            hdiutil create -volname "Hiddify" -srcfolder "$STAGE" -ov -format UDZO "out/Hiddify-macOS.dmg"
+          fi
+          # fastforge writes into dist/
+          find dist -name '*.dmg' -exec cp -v {} out/ \; 2>/dev/null || true
+
+          # A zip of the bundle as well: the app is only ad-hoc signed, so a
+          # download that carries the quarantine attribute can be refused by
+          # Gatekeeper, and unzipping then clearing the attribute is easier than
+          # dealing with a mounted image.
           ditto -c -k --sequesterRsrc --keepParent "$APP" "out/Hiddify-macOS-portable.zip"
           ls -lh out/
-          # The universal core library must be inside the bundle, otherwise the
-          # app starts and immediately fails to open the core.
+
+          # The icon must be compiled in, and the universal core library must be
+          # inside the bundle, otherwise the app shows a blank icon or starts and
+          # immediately fails to open the core.
+          echo "--- Resources ---"
+          ls -l "$APP/Contents/Resources/" | grep -i -E 'icns|icon' || echo "warning: no .icns in Resources"
+          echo "--- Frameworks ---"
           ls -l "$APP/Contents/Frameworks/" | head -n 20
 
       - uses: actions/upload-artifact@v4
