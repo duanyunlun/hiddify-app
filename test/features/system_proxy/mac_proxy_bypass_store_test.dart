@@ -112,5 +112,46 @@ void main() {
       expect(await store.write(['*.example.com']), isFalse);
       expect(await store.read(), isNull);
     });
+
+    test('writes need authorisation, reads do not', () {
+      final store = MacProxyBypassStore(runner: _FakeRunner().call);
+      expect(store.requiresAuthorisationForWrite, isTrue);
+    });
+  });
+
+  group('macBypassApplyScript', () {
+    test('asks for authorisation and quotes every argument', () {
+      final script = macBypassApplyScript('Wi-Fi', ['*.local', '169.254/16', '*.steampowered.com']);
+      expect(script, startsWith('do shell script "'));
+      expect(script, endsWith('" with administrator privileges'));
+      expect(script, contains("'networksetup'"));
+      expect(script, contains("'-setproxybypassdomains'"));
+      expect(script, contains("'Wi-Fi'"));
+      expect(script, contains("'*.steampowered.com'"));
+    });
+
+    test('a service name with a space stays one argument', () {
+      final script = macBypassApplyScript('Thunderbolt Bridge', ['*.local']);
+      expect(script, contains("'Thunderbolt Bridge'"));
+    });
+
+    test('a single quote in an entry cannot break out of the shell word', () {
+      // `'` becomes `'\''`, which the AppleScript layer then doubles the
+      // backslash of, so the entry stays a single quoted word and the `;` in it
+      // is never a command separator.
+      final script = macBypassApplyScript('Wi-Fi', ["a'; rm -rf /; echo '"]);
+      expect(script, contains(r"'\\''"));
+      // The entry is not closed before the semicolon, which is what an injection
+      // would need.
+      expect(script, isNot(contains("'a'; ")));
+      expect(script, isNot(contains("'a'\\''; rm")));
+    });
+
+    test('a double quote is escaped for AppleScript', () {
+      final script = macBypassApplyScript('Wi-Fi', ['a"b']);
+      // Without the escape the AppleScript literal would end at the entry.
+      expect(script, contains(r'\"'));
+      expect(script, contains("'a\\\"b'"));
+    });
   });
 }

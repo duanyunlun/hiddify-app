@@ -10,23 +10,47 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 const _kBypassKey = 'system-proxy-bypass';
 const _kBypassAdoptedKey = 'system-proxy-bypass-adopted';
 
+/// Where the list stands relative to the system.
+enum SystemProxyBypassApplyState {
+  /// The list is what the system has.
+  synced,
+
+  /// The user changed the list and it has not been written yet. macOS needs an
+  /// authorisation prompt to write, so its edits are held until asked for.
+  pending,
+
+  /// The last write failed: no privilege, the prompt was dismissed, or the
+  /// platform does not support the setting.
+  failed,
+
+  /// The platform has no system proxy bypass list at all.
+  unsupported,
+}
+
 /// The user's own system proxy bypass entries.
 class SystemProxyBypassState {
-  const SystemProxyBypassState({this.entries = const [], this.applied = true, this.loaded = false});
+  const SystemProxyBypassState({
+    this.entries = const [],
+    this.applyState = SystemProxyBypassApplyState.synced,
+    this.loaded = false,
+  });
 
   final List<String> entries;
-
-  /// False when the list could not be written (for example on a platform without
-  /// the setting, or without the privilege to change it), so the screen can say
-  /// the list is only stored.
-  final bool applied;
+  final SystemProxyBypassApplyState applyState;
 
   /// False until the current value has been read back from the system.
   final bool loaded;
 
-  SystemProxyBypassState copyWith({List<String>? entries, bool? applied, bool? loaded}) => SystemProxyBypassState(
+  bool get canApply => applyState == SystemProxyBypassApplyState.pending;
+  bool get hasFailed => applyState == SystemProxyBypassApplyState.failed;
+
+  SystemProxyBypassState copyWith({
+    List<String>? entries,
+    SystemProxyBypassApplyState? applyState,
+    bool? loaded,
+  }) => SystemProxyBypassState(
     entries: entries ?? this.entries,
-    applied: applied ?? this.applied,
+    applyState: applyState ?? this.applyState,
     loaded: loaded ?? this.loaded,
   );
 }
@@ -49,6 +73,10 @@ class SystemProxyBypassNotifier extends StateNotifier<SystemProxyBypassState> {
   /// False when the platform has no bypass list to manage.
   bool get isSupported => _store.isSupported;
 
+  /// True when writing raises an authorisation prompt, so the screen offers an
+  /// explicit apply instead of writing while the user types.
+  bool get requiresAuthorisation => _store.requiresAuthorisationForWrite;
+
   /// Entries the platform keeps whatever the user does.
   List<String> get localEntries => localEntriesOf(_store);
 
@@ -68,6 +96,10 @@ class SystemProxyBypassNotifier extends StateNotifier<SystemProxyBypassState> {
   );
 
   Future<void> _restore() async {
+    if (!_store.isSupported) {
+      state = state.copyWith(loaded: true, applyState: SystemProxyBypassApplyState.unsupported);
+      return;
+    }
     final adopted = _adoptedPref.read() ?? false;
     final List<String> entries;
     if (adopted) {
@@ -80,9 +112,14 @@ class SystemProxyBypassNotifier extends StateNotifier<SystemProxyBypassState> {
       unawaited(_adoptedPref.write(true));
       _persist(entries);
     }
-    final applied = _store.isSupported && await _store.write(entries);
+    // Writing at startup is only acceptable where it cannot prompt: on macOS the
+    // system already holds whatever was read, so there is nothing to write.
+    var applyState = SystemProxyBypassApplyState.synced;
+    if (!_store.requiresAuthorisationForWrite && !await _store.write(entries)) {
+      applyState = SystemProxyBypassApplyState.failed;
+    }
     if (!mounted) return;
-    state = state.copyWith(entries: entries, applied: applied, loaded: true);
+    state = state.copyWith(entries: entries, applyState: applyState, loaded: true);
   }
 
   List<String> _decode(String? raw) {
@@ -100,21 +137,49 @@ class SystemProxyBypassNotifier extends StateNotifier<SystemProxyBypassState> {
 
   void _persist(List<String> entries) => unawaited(_entriesPref.write(jsonEncode(entries)));
 
-  Future<void> _commit(List<String> entries) async {
-    _persist(entries);
-    final applied = _store.isSupported && await _store.write(entries);
+  /// Writes [entries] to the system and reports the outcome.
+  Future<void> _apply(List<String> entries) async {
+    final written = await _store.write(entries);
     if (!mounted) return;
-    state = state.copyWith(entries: entries, applied: applied, loaded: true);
+    state = state.copyWith(
+      applyState: written ? SystemProxyBypassApplyState.synced : SystemProxyBypassApplyState.failed,
+    );
   }
 
-  /// Replaces the whole list, as typed in the editor.
-  Future<void> setEntries(List<String> entries) => _commit(entries);
+  /// Replaces the whole list.
+  ///
+  /// Where writing is free the value is written straight away; where it prompts
+  /// for authorisation the new list is only remembered, and [apply] performs the
+  /// write when the user asks.
+  Future<void> setEntries(List<String> entries) async {
+    _persist(entries);
+    if (_store.requiresAuthorisationForWrite) {
+      if (!mounted) return;
+      state = state.copyWith(
+        entries: entries,
+        loaded: true,
+        applyState: _store.isSupported ? SystemProxyBypassApplyState.pending : SystemProxyBypassApplyState.unsupported,
+      );
+      return;
+    }
+    if (!mounted) return;
+    state = state.copyWith(entries: entries, loaded: true);
+    await _apply(entries);
+  }
 
   /// Removes every extra entry, leaving what the platform maintains.
-  Future<void> clear() => _commit(const []);
+  Future<void> clear() => setEntries(const []);
+
+  /// Writes the current list, raising the authorisation prompt where needed.
+  Future<void> apply() => _apply(state.entries);
 
   /// Reads the setting again, for the case where something else changed it.
-  Future<void> reloadFromSystem() async => _commit(await _store.currentUserEntries());
+  Future<void> reloadFromSystem() async {
+    final entries = await _store.currentUserEntries();
+    _persist(entries);
+    if (!mounted) return;
+    state = state.copyWith(entries: entries, loaded: true, applyState: SystemProxyBypassApplyState.synced);
+  }
 
   /// The value that is in effect, for display.
   List<String> get effectiveEntries =>

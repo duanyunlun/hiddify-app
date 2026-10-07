@@ -37,6 +37,9 @@ class WindowsProxyOverrideStore with InfraLogger implements SystemProxyBypassSto
   String get separator => ';';
 
   @override
+  bool get requiresAuthorisationForWrite => false;
+
+  @override
   Future<String?> read() async {
     if (!isSupported) return null;
     RegistryKey? key;

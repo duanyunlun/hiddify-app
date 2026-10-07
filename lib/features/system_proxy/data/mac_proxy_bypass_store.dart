@@ -39,6 +39,9 @@ class MacProxyBypassStore with InfraLogger implements SystemProxyBypassStore {
   @override
   String get separator => '\n';
 
+  @override
+  bool get requiresAuthorisationForWrite => true;
+
   /// The network service the core configures, i.e. the one behind the default
   /// route. Returns null when it cannot be determined.
   Future<String?> activeService() async {
@@ -122,11 +125,11 @@ class MacProxyBypassStore with InfraLogger implements SystemProxyBypassStore {
     }
     final entries = composeSystemProxyOverride(userEntries, localEntries: localEntries);
     try {
-      final result = await _run('networksetup', ['-setproxybypassdomains', service, ...entries]);
+      final result = await _run('osascript', ['-e', macBypassApplyScript(service, entries)]);
       if (result.exitCode != 0) {
-        // The usual cause is the missing privilege: changing a network service
-        // needs an administrator.
-        loggy.error('networksetup -setproxybypassdomains failed: ${result.stderr}');
+        // Includes the user dismissing the prompt, which osascript reports as
+        // "User canceled." on stderr.
+        loggy.error('the bypass domains could not be applied: ${result.stderr}');
         return false;
       }
       loggy.debug('wrote bypass domains for $service: ${entries.join(", ")}');
@@ -137,3 +140,28 @@ class MacProxyBypassStore with InfraLogger implements SystemProxyBypassStore {
     }
   }
 }
+
+/// The AppleScript that changes the bypass list.
+///
+/// macOS has no "run as administrator": changing a network service needs root,
+/// so the request goes through the standard authorisation prompt, which is what
+/// `with administrator privileges` shows. One prompt covers the whole list
+/// because it is a single command.
+///
+/// Public and separate from the command runner so the quoting can be tested
+/// without a Mac.
+String macBypassApplyScript(String service, List<String> entries) {
+  final command = [
+    'networksetup',
+    '-setproxybypassdomains',
+    service,
+    ...entries,
+  ].map(_shellQuote).join(' ');
+  return 'do shell script ${_appleScriptString(command)} with administrator privileges';
+}
+
+/// Wraps [value] as a single-quoted shell word.
+String _shellQuote(String value) => "'${value.replaceAll("'", r"'\''")}'";
+
+/// Wraps [value] as an AppleScript string literal.
+String _appleScriptString(String value) => '"${value.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"';

@@ -110,7 +110,23 @@ class SystemProxyBypassPage extends HookConsumerWidget {
                 border: const OutlineInputBorder(),
               ),
             ),
-            if (!state.applied) ...[
+            if (state.canApply) ...[
+              const Gap(12),
+              Row(
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 16, color: theme.colorScheme.primary),
+                  const Gap(6),
+                  Expanded(
+                    child: Text(s.pendingNote, style: theme.textTheme.bodySmall),
+                  ),
+                  FilledButton(
+                    onPressed: notifier.apply,
+                    child: Text(s.save),
+                  ),
+                ],
+              ),
+            ],
+            if (state.hasFailed || state.applyState == SystemProxyBypassApplyState.unsupported) ...[
               const Gap(12),
               Row(
                 children: [
@@ -118,7 +134,7 @@ class SystemProxyBypassPage extends HookConsumerWidget {
                   const Gap(6),
                   Expanded(
                     child: Text(
-                      s.notApplied,
+                      state.applyState == SystemProxyBypassApplyState.unsupported ? s.unsupportedNote : s.notApplied,
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
                     ),
                   ),

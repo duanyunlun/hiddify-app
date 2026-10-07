@@ -21,6 +21,10 @@ abstract interface class SystemProxyBypassStore {
   /// How the platform separates entries in its own representation.
   String get separator;
 
+  /// True when writing raises an authorisation prompt, so the value must only be
+  /// written when the user asks for it rather than on every keystroke.
+  bool get requiresAuthorisationForWrite;
+
   /// The list currently in effect, exactly as the platform reports it.
   Future<String?> read();
 
@@ -44,6 +48,9 @@ class UnsupportedSystemProxyBypassStore implements SystemProxyBypassStore {
 
   @override
   String get separator => ';';
+
+  @override
+  bool get requiresAuthorisationForWrite => false;
 
   @override
   Future<String?> read() async => null;
