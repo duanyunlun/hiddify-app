@@ -117,6 +117,32 @@ class RuleSetsNotifier extends StateNotifier<RuleSetsState> {
     _persist();
   }
 
+  /// Tags of [ruleSets] that no route rule references any more.
+  ///
+  /// A rule set does nothing on its own: it only takes effect through the rules
+  /// that reference its tag. Once the last such rule is gone the entry is dead
+  /// weight — the market keeps listing it as "already added" while nothing uses
+  /// it, which is why it used to have to be deleted a second time by hand.
+  static List<String> unreferencedTags({
+    required Iterable<RuleSetEntry> ruleSets,
+    required Set<String> referencedTags,
+  }) => ruleSets
+      .where((entry) => !referencedTags.contains(entry.tag))
+      .map((entry) => entry.tag)
+      .toList(growable: false);
+
+  /// Removes every rule set that is no longer referenced by a route rule.
+  /// Returns the tags that were removed (empty when there was nothing to do).
+  List<String> removeUnreferenced(Set<String> referencedTags) {
+    final removed = unreferencedTags(ruleSets: state.ruleSets, referencedTags: referencedTags);
+    if (removed.isEmpty) return removed;
+    state = state.copyWith(
+      ruleSets: state.ruleSets.where((entry) => !removed.contains(entry.tag)).toList(growable: false),
+    );
+    _persist();
+    return removed;
+  }
+
   void setEnabled(String tag, bool enabled) {
     state = state.copyWith(
       ruleSets: state.ruleSets.map((e) => e.tag == tag ? e.copyWith(enabled: enabled) : e).toList(growable: false),

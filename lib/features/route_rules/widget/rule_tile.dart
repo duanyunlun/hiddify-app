@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hiddify/core/localization/translations.dart';
+import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/features/route_rules/notifier/rules_notifier.dart';
 import 'package:hiddify/features/route_rules/widget/setting_detail_chips.dart';
+import 'package:hiddify/features/rule_sets/notifier/rule_sets_notifier.dart';
 import 'package:hiddify/hiddifycore/generated/v2/config/route_rule.pb.dart';
 import 'package:hiddify/utils/platform_utils.dart';
 
@@ -45,6 +47,19 @@ class RuleTile extends HookConsumerWidget {
         );
     if (result == true) {
       await ref.read(rulesNotifierProvider.notifier).deleteRule(rule.listOrder);
+      // A rule set only has an effect through the rules that reference it, so
+      // the ones this deletion orphaned go away with it. Otherwise the market
+      // keeps showing them as "already added" while nothing uses them, and they
+      // had to be removed a second time from the rule set list.
+      final referencedTags = ref.read(rulesNotifierProvider).expand((rule) => rule.ruleSets).toSet();
+      final removed = ref.read(ruleSetsProvider.notifier).removeUnreferenced(referencedTags);
+      if (removed.isNotEmpty && context.mounted) {
+        ref
+            .read(inAppNotificationControllerProvider)
+            .showInfoToast(
+              t.pages.settings.routing.ruleSets.msg.removedUnreferenced(tags: removed.join(', ')),
+            );
+      }
     }
   }
 

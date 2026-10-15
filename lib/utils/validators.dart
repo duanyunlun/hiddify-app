@@ -43,7 +43,12 @@ final _ipCidrRegex = RegExp(
 
 final _domainRegex = RegExp(r'^([a-zA-Z\d\-]+\.)+[a-zA-Z\d\-]{2,}$', caseSensitive: false);
 
-final _domainSuffix = RegExp(r'^\.[a-zA-Z\d\-]{2,}$', caseSensitive: false);
+/// A domain suffix as accepted by sing-box: a TLD (`.com`), a full suffix
+/// (`.example.com`, `example.com`) or the wildcard spelling users commonly type
+/// (`*.example.com`). The wildcard prefix is only a convenience for the input
+/// field; it is normalised to the `.example.com` form before being stored,
+/// because a literal `*.` prefix is not a suffix sing-box would ever match.
+final _domainSuffix = RegExp(r'^(?:\*\.)?\.?(?:[a-zA-Z\d\-]+\.)*[a-zA-Z\d\-]{2,}$', caseSensitive: false);
 
 /// https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url/3809435#3809435
 bool isUrl(String input) {

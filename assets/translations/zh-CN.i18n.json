@@ -368,6 +368,9 @@
             "pathRequired": "本地规则集必须填写路径",
             "duplicate": "标签 “${tag}” 的规则集已存在"
           },
+          "msg": {
+            "removedUnreferenced": "已一并移除不再被任何规则引用的规则集：${tags}"
+          },
           "catalog": {
             "title": "规则市场",
             "manageAdded": "已添加的规则集",

@@ -368,6 +368,9 @@
             "pathRequired": "Path is required for a local rule set",
             "duplicate": "A rule set with tag \"${tag}\" already exists"
           },
+          "msg": {
+            "removedUnreferenced": "Also removed rule sets that no rule references any more: ${tags}"
+          },
           "catalog": {
             "title": "Rule market",
             "manageAdded": "My rule sets",

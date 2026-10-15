@@ -19,15 +19,27 @@ class GenericListNotifier extends _$GenericListNotifier {
   }
 
   void add(dynamic value) {
-    if (!_isValid(value)) return;
-    state = [...state, value];
+    final normalized = _normalize(value);
+    if (!_isValid(normalized)) return;
+    state = [...state, normalized];
     _save();
   }
 
   void update(int index, dynamic value) {
-    if (!_isValid(value)) return;
-    state = List.from(state)..[index] = value;
+    final normalized = _normalize(value);
+    if (!_isValid(normalized)) return;
+    state = List.from(state)..[index] = normalized;
     _save();
+  }
+
+  /// Accepts the spellings users actually type and stores the form sing-box
+  /// matches against. A domain suffix is matched as a suffix, so `*.example.com`
+  /// (which sing-box would never match literally) is stored as `.example.com`.
+  dynamic _normalize(dynamic value) {
+    if (_ruleEnum == RuleEnum.domainSuffix && value is String && value.startsWith('*.')) {
+      return value.substring(1);
+    }
+    return value;
   }
 
   void remove(int index) {
